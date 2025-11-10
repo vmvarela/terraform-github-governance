@@ -1,0 +1,119 @@
+# GitHub Provider Configuration
+github_token = "ghp_YOUR_GITHUB_TOKEN_HERE"
+
+# Governance Configuration
+organization      = "your-organization"
+workspace        = "microservices"
+repository_naming = "myorg-%s" # Prefix all repository names
+
+# Define presets referenced below (names must match repositories[*].preset)
+presets = {
+  production-service = {
+    protected_branches = ["main", "release/*"]
+    required_approvals = 2
+    required_checks    = ["ci", "security-scan"]
+    allow_bypass       = ["org-admin"]
+  }
+  staging = {
+    protected_branches = ["main"]
+  }
+  experimental = {
+    protected_branches = ["main"]
+    required_approvals = 0
+  }
+  documentation = {
+    visibility         = "public"
+    protected_branches = ["main"]
+  }
+  library = {
+    visibility         = "public"
+    protected_branches = ["main"]
+  }
+}
+
+# Repositories with advanced configurations
+repositories = {
+  # Production API with strict controls and overrides
+  core-api = {
+    preset      = "production-service"
+    description = "Core API service"
+    topics      = ["api", "core", "production"]
+
+    # Override preset with flattened inputs
+    protected_branches      = ["main", "release/*", "hotfix/*"]
+    required_approvals      = 3
+    required_checks         = ["ci", "security-scan", "integration-tests"]
+    prevent_force_push      = true
+    prevent_branch_deletion = true
+    allow_bypass            = ["org-admin"]
+
+    # Environment-specific secrets
+    environments = {
+      production = {
+        required_approvers = ["team:sre", "team:security"]
+        secrets = {
+          "API_KEY" = "prod-secret-value"
+        }
+        variables = {
+          ENV = "production"
+        }
+      }
+    }
+  }
+
+  # Staging service
+  test-service = {
+    preset      = "staging"
+    description = "Testing and staging service"
+    topics      = ["testing", "staging"]
+  }
+
+  # Experimental with visibility override
+  research-ml = {
+    preset      = "experimental"
+    description = "Machine learning research project"
+    topics      = ["ml", "research"]
+    visibility  = "public" # Override preset's private visibility
+  }
+
+  # Documentation repository
+  platform-docs = {
+    preset      = "documentation"
+    description = "Platform documentation"
+    topics      = ["docs", "documentation"]
+  }
+
+  # Example of repository renaming
+  # Key stays stable, name field contains the actual GitHub name
+  legacy-auth = {
+    name        = "auth-service-v2"
+    preset      = "production-service"
+    description = "Authentication service (renamed from legacy-auth)"
+    topics      = ["auth", "security"]
+  }
+
+  # Simple repository with default preset
+  internal-tools = {
+    description = "Internal developer tools"
+    topics      = ["internal", "tools"]
+  }
+
+  # Template repository
+  service-template = {
+    preset      = "library"
+    description = "Template for creating new services"
+    is_template = true
+    topics      = ["template", "scaffold"]
+  }
+
+  # Repository created from template
+  new-service = {
+    preset      = "staging"
+    description = "New service created from template"
+    template = {
+      repository           = "vmvarela-org-testing/service-template"
+      include_all_branches = false
+    }
+    topics = ["new", "from-template"]
+  }
+}

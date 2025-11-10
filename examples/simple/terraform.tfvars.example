@@ -1,0 +1,42 @@
+# GitHub Provider Configuration
+github_org   = "vmvarela-org-testing"
+github_token = "ghp_YOUR_GITHUB_TOKEN_HERE"
+
+# Governance Configuration
+organization      = "vmvarela-org-testing"
+workspace        = "platform"
+repository_naming = "%s" # Use repository keys directly as names
+
+# (Opcional) Define presets y refiérelos desde repositories[*].preset
+presets = {
+  production-service = {
+    protected_branches = ["main"]
+    required_approvals = 2
+  }
+  documentation = {
+    visibility         = "public"
+    protected_branches = ["main"]
+  }
+}
+
+# Repositories to create
+repositories = {
+  api-service = {
+    description = "Main API service"
+    topics      = ["api", "backend"]
+  }
+
+  payment-processor = {
+    preset      = "production-service"
+    description = "Payment processing service"
+    topics      = ["payment", "production"]
+    # Ejemplo de override plano
+    required_checks = ["ci"]
+  }
+
+  shared-utils = {
+    preset      = "documentation"
+    description = "Shared utility library"
+    topics      = ["library", "utilities"]
+  }
+}

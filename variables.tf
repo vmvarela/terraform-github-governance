@@ -9,15 +9,8 @@ variable "mode" {
 }
 
 variable "name" {
-  description = "The shorthand name of the project/organization."
+  description = "The ID of the project/organization."
   type        = string
-  default     = null
-}
-
-variable "description" {
-  description = "The description of the project/organization. The maximum size is 160 characters."
-  type        = string
-  default     = null
 }
 
 variable "defaults" {
@@ -55,7 +48,13 @@ variable "repositories" {
   default     = {}
 }
 
-variable "github_repositories" {
+variable "info_organization" {
+  description = "Info about the organization. If not provided, they will be fetched by the module."
+  type        = any
+  default     = null
+}
+
+variable "info_repositories" {
   description = "All repositories in the organization. If not provided, they will be fetched by the module."
   type        = any
   default     = null
@@ -219,7 +218,7 @@ variable "repository_roles" {
 }
 
 variable "webhooks" {
-  description = "The list of webhooks of the organization."
+  description = "The list of webhooks of the organization. NOTE: Organization webhooks require GitHub Team or Enterprise plan. GitHub Free organizations will receive a 404 error. Use repository-level webhooks for Free plans."
   type = map(object({
     active       = optional(bool, true)
     url          = string

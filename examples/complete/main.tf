@@ -3,6 +3,7 @@ provider "github" {
   token = var.github_token
 }
 
+# Complete governance example - demonstrates advanced features
 module "governance" {
   source            = "../.."
   organization      = var.organization

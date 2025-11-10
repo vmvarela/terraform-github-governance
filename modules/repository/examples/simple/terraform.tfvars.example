@@ -1,0 +1,74 @@
+# GitHub Provider Configuration
+github_token = "ghp_YOUR_GITHUB_TOKEN_HERE"
+
+# Core Configuration
+name           = "my-test-repo"
+description    = "Test repository created with Terraform"
+visibility     = "private"
+default_branch = "main"
+
+organization = "your-organization"
+workspace        = "platform-services"
+
+topics = ["terraform", "test"]
+
+properties = {
+  "owner" = "platform-team"
+}
+
+# Template Configuration (optional - set is_template = true to make this a template)
+is_template = false
+template    = null
+
+# Access & Permissions
+permissions = {
+  # "team:developers" = "push"
+  # "user:your-username" = "admin"
+}
+
+deploy_keys = {
+  # "CI Key" = {
+  #   key       = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
+  #   read_only = false
+  # }
+}
+
+allowed_roles = ["pull", "triage", "push", "maintain", "admin"]
+
+# Automation
+webhooks = {
+  # "ci-webhook" = {
+  #   url    = "https://ci.example.com/webhook"
+  #   events = ["push", "pull_request"]
+  #   secret = "webhook-secret"
+  # }
+}
+
+repository_secrets = {
+  # "CI_TOKEN" = "secret-value"
+}
+
+repository_variables = {
+  # "ENV" = "development"
+}
+
+# Environments
+environments = {
+  # "production" = {
+  #   required_approvers = ["team:sre"]
+  #   secrets = {
+  #     "API_KEY" = "prod-secret"
+  #   }
+  #   variables = {
+  #     "ENV" = "production"
+  #   }
+  # }
+}
+
+# Branch Protection (flattened)
+protected_branches      = ["main"]
+allow_bypass            = ["org-admin"]
+required_approvals      = 1
+required_checks         = ["ci"]
+prevent_force_push      = true
+prevent_branch_deletion = true
