@@ -40,11 +40,11 @@ locals {
     "auto_init",
     "default_branch",
     "delete_branch_on_merge",
-    "description",
     "dependabot_copy_secrets",
     "deploy_keys_path",
     "enable_actions",
     "enable_advanced_security",
+    "enable_dependency_graph",
     "enable_dependabot_security_updates",
     "enable_secret_scanning",
     "enable_secret_scanning_push_protection",
@@ -104,6 +104,7 @@ locals {
 
   # merge settings, each repository and defaults
   repositories = { for repo, data in var.repositories : try(data.alias, repo) => merge(
+    { description = try(data.description, null) },
     { for k in local.coalesce_keys : k => try(coalesce(lookup(local.settings, k, null), lookup(data, k, null), lookup(var.defaults, k, null)), null) },
     { for k in local.union_keys : k =>
       length(setunion([], try(lookup(data, k, []), []), try(coalesce(lookup(local.settings, k, []), []), []))) > 0 ?
@@ -118,23 +119,82 @@ locals {
   ) }
 
   github_org          = var.mode == "organization" ? var.name : var.github_org
-  github_repositories = var.github_repositories != null ? var.github_repositories : try(data.github_repositories.all[0], null)
-  github_repository_id = { for r in try(local.github_repositories.names, []) :
-    r => element(local.github_repositories.repo_ids, index(local.github_repositories.names, r))
+  info_repositories = var.info_repositories != null ? var.info_repositories : try(data.github_repositories.all[0], null)
+  github_repository_id = { for r in try(local.info_repositories.names, []) :
+    r => element(local.info_repositories.repo_ids, index(local.info_repositories.names, r))
   }
+  info_organization = var.info_organization != null ? var.info_organization : try(data.github_organization.this[0], null)
+  github_plan = lower(local.info_organization.plan)
 }
 
 data "github_repositories" "all" {
-  count           = var.github_repositories == null ? 1 : 0
+  count           = var.info_repositories == null ? 1 : 0
   query           = "org:${local.github_org}"
   include_repo_id = true
+}
+
+# Fetch organization information to check plan type
+data "github_organization" "this" {
+  count           = var.info_organization == null ? 1 : 0
+  name            = local.github_org
+}
+
+# Validate organization plan for features that require paid plans
+check "organization_plan_validation" {
+  assert {
+    condition = length(var.webhooks) == 0 || local.github_plan != "free"
+
+    error_message = <<-EOT
+      ❌ Organization webhooks require GitHub Team, Business, or Enterprise plan.
+      Current plan: ${local.github_plan}
+      
+      Solutions:
+        1. Remove the 'webhooks' configuration from your module
+        2. Use repository-level webhooks instead (configure in each repository)
+        3. Upgrade your organization plan at: https://github.com/organizations/${local.github_org}/settings/billing
+      
+      Error occurs at: github_organization_webhook resource
+    EOT
+  }
+
+  assert {
+    condition = length(var.rulesets) == 0 || local.github_plan != "free"
+  
+    error_message = <<-EOT
+      ❌ Organization rulesets require GitHub Team, Business, or Enterprise plan.
+      Current plan: ${local.github_plan}
+      
+      Solutions:
+        1. Remove the 'rulesets' configuration from your module
+        2. Use repository-level branch protection rules instead
+        3. Upgrade your organization plan at: https://github.com/organizations/${local.github_org}/settings/billing
+      
+      Error occurs at: github_organization_ruleset resource
+    EOT
+  }
+
+  assert {
+    condition = length(var.repository_roles) == 0 || contains(["enterprise", "enterprise_cloud"], local.github_plan)
+
+    error_message = <<-EOT
+      ❌ Custom repository roles require GitHub Enterprise plan.
+      Current plan: ${local.github_plan}
+      
+      Solutions:
+        1. Remove the 'repository_roles' configuration from your module
+        2. Use standard roles (read, triage, write, maintain, admin) instead
+        3. Upgrade to GitHub Enterprise at: https://github.com/organizations/${local.github_org}/settings/billing
+      
+      Error occurs at: github_organization_repository_role resource
+    EOT
+  }
 }
 
 # organization_settings
 resource "github_organization_settings" "this" {
   count                                                        = var.mode == "organization" ? 1 : 0
-  name                                                         = var.name
-  description                                                  = var.description
+  name                                                         = try(var.settings.display_name, null)
+  description                                                  = try(var.settings.description, null)
   billing_email                                                = try(var.settings.billing_email, null)
   company                                                      = try(var.settings.company, null)
   blog                                                         = try(var.settings.blog, null)
@@ -190,7 +250,7 @@ module "repo" {
   dependabot_secrets_encrypted           = each.value.dependabot_secrets_encrypted
   deploy_keys                            = each.value.deploy_keys
   deploy_keys_path                       = each.value.deploy_keys_path
-  description                            = each.value.description
+  description                            = try(each.value.description, null)
   enable_actions                         = each.value.enable_actions
   enable_advanced_security               = each.value.enable_advanced_security
   enable_secret_scanning                 = each.value.enable_secret_scanning
@@ -410,7 +470,8 @@ resource "github_actions_runner_group" "this" {
 }
 
 # organization_repository_role
-resource "github_organization_repository_role" "this" {
+#resource "github_organization_repository_role" "this" { # Uncomment when the provider supports it
+resource "github_organization_custom_role" "this" {
   for_each    = var.mode == "organization" ? var.repository_roles : {}
   name        = each.key
   description = each.value.description
@@ -419,6 +480,8 @@ resource "github_organization_repository_role" "this" {
 }
 
 # organization_webhook
+# NOTE: Organization webhooks require GitHub Team or Enterprise plan.
+# For GitHub Free organizations, use repository-level webhooks instead.
 resource "github_organization_webhook" "this" {
   for_each = var.mode == "organization" ? var.webhooks : {}
   active   = true

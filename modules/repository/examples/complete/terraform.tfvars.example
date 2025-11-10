@@ -1,0 +1,25 @@
+# GitHub Provider Configuration
+github_token = "ghp_YOUR_GITHUB_TOKEN_HERE"
+
+# Organization
+organization = "your-organization"
+
+# CI/CD Configuration
+ci_deploy_key     = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-ci-deploy-key"
+ci_webhook_url    = "https://ci.example.com/webhook"
+ci_webhook_secret = "your-webhook-secret-here"
+
+# Docker Registry
+docker_username = "your-docker-username"
+docker_password = "your-docker-password"
+
+# Production Environment Secrets
+production_api_key = "prod-api-key-value"
+production_db_url  = "postgresql://user:pass@prod-db.example.com:5432/proddb"
+
+# Staging Environment Secrets
+staging_api_key = "staging-api-key-value"
+staging_db_url  = "postgresql://user:pass@staging-db.example.com:5432/stagingdb"
+
+# NPM Publishing Token
+npm_publish_token = "npm_token_for_publishing_packages"
