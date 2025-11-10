@@ -45,5 +45,13 @@ jobs:
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
 
+      - name: Setup terraform-docs
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          working-dir: .
+          output-file: README.md
+          output-method: inject
+          git-push: "false"
+
       - name: Pre-commit
         uses: pre-commit/action@v3.0.1
