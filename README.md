@@ -27,7 +27,7 @@ A comprehensive Terraform module for applying consistent governance to GitHub or
 ```hcl
 module "github_governance" {
   source  = "vmvarela/governance/github"
-  version = "~> 1.0"
+  version = "~> 0.1"
 
   name          = "my-organization"
   billing_email = "billing@example.com"
@@ -514,14 +514,19 @@ module "project_x" {
 |------|-------------|
 | <a name="output_custom_role_ids"></a> [custom\_role\_ids](#output\_custom\_role\_ids) | Map of custom repository role names to their IDs (Enterprise only) |
 | <a name="output_features_available"></a> [features\_available](#output\_features\_available) | Features available based on current organization plan |
+| <a name="output_governance_summary"></a> [governance\_summary](#output\_governance\_summary) | Complete governance posture summary |
 | <a name="output_organization_id"></a> [organization\_id](#output\_organization\_id) | GitHub organization ID |
 | <a name="output_organization_plan"></a> [organization\_plan](#output\_organization\_plan) | Current GitHub organization plan (free, team, business, enterprise) |
 | <a name="output_organization_settings"></a> [organization\_settings](#output\_organization\_settings) | Organization settings |
+| <a name="output_organization_settings_summary"></a> [organization\_settings\_summary](#output\_organization\_settings\_summary) | Organization settings configuration summary |
 | <a name="output_repositories"></a> [repositories](#output\_repositories) | Repositories managed by the module (complete module outputs) |
+| <a name="output_repositories_security_posture"></a> [repositories\_security\_posture](#output\_repositories\_security\_posture) | Security configuration summary across all repositories |
+| <a name="output_repositories_summary"></a> [repositories\_summary](#output\_repositories\_summary) | Summary statistics of repositories managed by this module |
 | <a name="output_repository_ids"></a> [repository\_ids](#output\_repository\_ids) | Map of all repository names to their IDs (numeric).<br/>Includes both repositories managed by this module and existing repositories in the organization.<br/>Useful for referencing repositories in rulesets, runner groups, and other resources.<br/><br/>Usage example in rulesets:<br/>  selected\_repository\_ids = [<br/>    module.github.repository\_ids["my-repo"],<br/>    module.github.repository\_ids["another-repo"]<br/>  ] |
 | <a name="output_repository_names"></a> [repository\_names](#output\_repository\_names) | Map of repository keys to their actual names (after applying spec formatting) |
 | <a name="output_ruleset_ids"></a> [ruleset\_ids](#output\_ruleset\_ids) | Map of organization ruleset names to their IDs |
 | <a name="output_runner_group_ids"></a> [runner\_group\_ids](#output\_runner\_group\_ids) | Map of runner group names to their IDs |
+| <a name="output_runner_groups_summary"></a> [runner\_groups\_summary](#output\_runner\_groups\_summary) | Summary of runner groups and scale sets deployment |
 | <a name="output_webhook_ids"></a> [webhook\_ids](#output\_webhook\_ids) | Map of organization webhook names to their IDs |
 <!-- END_TF_DOCS -->
 

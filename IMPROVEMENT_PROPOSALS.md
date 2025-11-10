@@ -1027,9 +1027,9 @@ This guide explains all available outputs and how to use them effectively.
 
 ### Semana 1: Crítico
 - [x] Implementar outputs granulares en `modules/repository` ✅ (Commit: 84f179d)
-- [x] Refactorizar locals en `main.tf` ✅
-- [ ] Agregar outputs de summary en root module
-- [ ] Tests de validación para nuevos outputs
+- [x] Refactorizar locals en `main.tf` ✅ (Commit: 06a67fe)
+- [x] Agregar outputs de summary en root module ✅
+- [x] Tests de validación para nuevos outputs ✅ (30/30 passing)
 
 ### Semana 2: Importante
 - [ ] Type safety: reemplazar `any` por types explícitos
