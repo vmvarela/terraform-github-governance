@@ -33,11 +33,6 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v6
-        with:
-          tflint_version: ${{ env.TFLINT_VERSION }}
-
       - name: Terraform Init
         run: terraform init -backend=false
 
