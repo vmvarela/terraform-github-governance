@@ -16,7 +16,8 @@ The module enables infrastructure-as-code practices for GitHub repositories, sup
 
 ```hcl
 module "repo" {
-  source         = "github.com/vmvarela/terraform-github-repository"
+  source  = "vmvarela/governance/github//modules/repository"
+  version = "~> 0.1"
   name           = "my-repo"
   visibility     = "public"
   default_branch = "main"
@@ -35,73 +36,10 @@ module "repo" {
 
 ## Examples
 
-- [simple](https://github.com/vmvarela/terraform-github-repository/tree/master/examples/simple) - Basic repository with minimal configuration
-- [complete](https://github.com/vmvarela/terraform-github-repository/tree/master/examples/complete) - Comprehensive example showcasing all module features
-
+- [`simple/`](./examples/simple/) - Minimal configuration to get started
+- [`complete/`](./examples/complete/) - Comprehensive example with all features
 
 <!-- BEGIN_TF_DOCS -->
-
-
-## Usage
-
-### Basic Example (Organization Mode)
-
-```hcl
-module "github" {
-  source  = "vmvarela/governance/github"
-  version = "~> 1.0"
-
-  mode = "organization"
-  name = "my-organization"
-
-  settings = {
-    billing_email = "billing@example.com"
-  }
-
-  repositories = {
-    "my-app" = {
-      description = "My application"
-      visibility  = "private"
-    }
-  }
-}
-```
-
-### Project Mode Example
-
-```hcl
-module "project_x" {
-  source  = "vmvarela/governance/github"
-  version = "~> 1.0"
-
-  mode       = "project"
-  name       = "project-x"
-  github_org = "my-organization"
-  spec       = "project-x-%s"
-
-  settings = {
-    billing_email = "billing@example.com"
-  }
-
-  repositories = {
-    "backend"  = { description = "Backend API" }
-    "frontend" = { description = "Frontend App" }
-  }
-}
-```
-
-## Examples
-
-- [Simple](./examples/simple) - Minimal configuration to get started
-- [Complete](./examples/complete) - Comprehensive example with all features
-- [Mode Comparison](./examples/mode-comparison) - Organization vs Project modes
-- [Repository References](./examples/repository-references) - Working with repository IDs
-
-## Submodules
-
-- [repository](./modules/repository) - Standalone repository management
-- [actions-runner-scale-set](./modules/actions-runner-scale-set) - Kubernetes-based GitHub Actions runners
-
 ## Requirements
 
 | Name | Version |
@@ -158,7 +96,6 @@ module "project_x" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_name"></a> [name](#input\_name) | The name of the repository. Changing this will rename the repository | `string` | n/a | yes |
 | <a name="input_actions_access_level"></a> [actions\_access\_level](#input\_actions\_access\_level) | The access level for the repository. Must be one of `none`, `user`, `organization`, or `enterprise`. Default: `none` | `string` | `null` | no |
 | <a name="input_actions_allowed_github"></a> [actions\_allowed\_github](#input\_actions\_allowed\_github) | Whether GitHub-owned actions are allowed in the repository. Only available when `actions_allowed_policy` = `selected`. | `bool` | `true` | no |
 | <a name="input_actions_allowed_patterns"></a> [actions\_allowed\_patterns](#input\_actions\_allowed\_patterns) | Specifies a list of string-matching patterns to allow specific action(s). Wildcards, tags, and SHAs are allowed. For example, `monalisa/octocat@`, `monalisa/octocat@v2`, `monalisa/`. | `set(string)` | `[]` | no |
@@ -204,6 +141,7 @@ module "project_x" {
 | <a name="input_license_template"></a> [license\_template](#input\_license\_template) | Use the [name of the template](https://github.com/github/choosealicense.com/tree/gh-pages/_licenses) without the extension. For example, `mit` or `mpl-2.0`. | `string` | `null` | no |
 | <a name="input_merge_commit_message"></a> [merge\_commit\_message](#input\_merge\_commit\_message) | Can be `PR_BODY`, `PR_TITLE`, or `BLANK` for a default merge commit message. Applicable only if `allow_merge_commit` is `true`. | `string` | `null` | no |
 | <a name="input_merge_commit_title"></a> [merge\_commit\_title](#input\_merge\_commit\_title) | Can be `PR_TITLE` or `MERGE_MESSAGE` for a default merge commit title. Applicable only if `allow_merge_commit` is `true`. | `string` | `null` | no |
+| <a name="input_name"></a> [name](#input\_name) | The name of the repository. Changing this will rename the repository | `string` | n/a | yes |
 | <a name="input_pages_build_type"></a> [pages\_build\_type](#input\_pages\_build\_type) | The type of GitHub Pages site to build. Can be `legacy` or `workflow`. If you use `legacy` as build type you need to set the option `pages_source_branch`. | `string` | `null` | no |
 | <a name="input_pages_cname"></a> [pages\_cname](#input\_pages\_cname) | The custom domain for the repository. This can only be set after the repository has been created. | `string` | `null` | no |
 | <a name="input_pages_source_branch"></a> [pages\_source\_branch](#input\_pages\_source\_branch) | The repository branch used to publish the site's source files. (i.e. `main` or `gh-pages`) | `string` | `null` | no |
@@ -228,9 +166,30 @@ module "project_x" {
 
 | Name | Description |
 |------|-------------|
-| <a name="output_alias"></a> [alias](#output\_alias) | Alias (used for renaming) |
-| <a name="output_private_keys"></a> [private\_keys](#output\_private\_keys) | Autogenerated private keys |
-| <a name="output_repository"></a> [repository](#output\_repository) | Created repository |
+| <a name="output_alias"></a> [alias](#output\_alias) | Repository alias (used for renaming operations) |
+| <a name="output_archived"></a> [archived](#output\_archived) | Whether the repository is archived |
+| <a name="output_auto_generated_deploy_keys"></a> [auto\_generated\_deploy\_keys](#output\_auto\_generated\_deploy\_keys) | List of auto-generated deploy key names (private keys available via private\_keys output) |
+| <a name="output_default_branch"></a> [default\_branch](#output\_default\_branch) | Name of the default branch |
+| <a name="output_deploy_keys"></a> [deploy\_keys](#output\_deploy\_keys) | Map of deploy key names to their configuration |
+| <a name="output_environments"></a> [environments](#output\_environments) | Map of environment names to their configuration |
+| <a name="output_features_enabled"></a> [features\_enabled](#output\_features\_enabled) | Repository features status |
+| <a name="output_homepage_url"></a> [homepage\_url](#output\_homepage\_url) | Homepage URL of the repository |
+| <a name="output_is_template"></a> [is\_template](#output\_is\_template) | Whether the repository is a template |
+| <a name="output_merge_configuration"></a> [merge\_configuration](#output\_merge\_configuration) | Merge configuration for pull requests |
+| <a name="output_private_keys"></a> [private\_keys](#output\_private\_keys) | Auto-generated private deploy keys (sensitive) |
+| <a name="output_repository"></a> [repository](#output\_repository) | Complete repository object (use specific outputs for better terraform graph performance) |
+| <a name="output_repository_full_name"></a> [repository\_full\_name](#output\_repository\_full\_name) | Full name of the repository (owner/name) |
+| <a name="output_repository_git_clone_url"></a> [repository\_git\_clone\_url](#output\_repository\_git\_clone\_url) | HTTPS URL to clone the repository |
+| <a name="output_repository_id"></a> [repository\_id](#output\_repository\_id) | Numeric ID of the repository |
+| <a name="output_repository_name"></a> [repository\_name](#output\_repository\_name) | Name of the repository |
+| <a name="output_repository_node_id"></a> [repository\_node\_id](#output\_repository\_node\_id) | GraphQL global node ID of the repository |
+| <a name="output_repository_ssh_clone_url"></a> [repository\_ssh\_clone\_url](#output\_repository\_ssh\_clone\_url) | SSH URL to clone the repository |
+| <a name="output_repository_url"></a> [repository\_url](#output\_repository\_url) | URL to the repository on GitHub |
+| <a name="output_rulesets"></a> [rulesets](#output\_rulesets) | Map of ruleset names to their IDs |
+| <a name="output_security_configuration"></a> [security\_configuration](#output\_security\_configuration) | Security features enabled on the repository |
+| <a name="output_topics"></a> [topics](#output\_topics) | List of topics associated with the repository |
+| <a name="output_visibility"></a> [visibility](#output\_visibility) | Visibility of the repository (public/private/internal) |
+| <a name="output_webhooks"></a> [webhooks](#output\_webhooks) | Map of webhook URLs to their configuration |
 <!-- END_TF_DOCS -->
 
 ## Authors
