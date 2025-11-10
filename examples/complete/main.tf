@@ -1,15 +1,34 @@
+terraform {
+  required_version = ">= 1.6"
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
+  }
+}
+
+provider "github" {
+  owner = var.name
+  token = var.github_token
+}
 module "github_governance" {
   source = "../.."
 
   # Core Configuration
-  name          = var.name
-  billing_email = var.billing_email
-  mode          = "organization"
-  github_plan   = var.github_plan
+  name = var.name
+  mode = "organization"
+
+  # Provide empty defaults to avoid API calls that may fail on empty/new organizations
+  info_repositories = []
+  info_organization = {
+    plan = var.github_plan
+  }
 
   # Organization Settings
   settings = {
     # General
+    billing_email             = var.billing_email
     description               = "Comprehensive example showcasing all module features"
     company                   = "Example Corp"
     blog                      = "https://example.com"
@@ -20,14 +39,13 @@ module "github_governance" {
     has_organization_projects = true
 
     # Member Privileges
-    members_can_create_repositories          = true
-    members_can_create_public_repositories   = true
-    members_can_create_private_repositories  = true
-    members_can_create_internal_repositories = var.github_plan == "enterprise"
-    members_can_create_pages                 = true
-    members_can_create_public_pages          = true
-    members_can_create_private_pages         = true
-    members_can_fork_private_repositories    = true
+    members_can_create_repositories         = true
+    members_can_create_public_repositories  = true
+    members_can_create_private_repositories = true
+    members_can_create_pages                = true
+    members_can_create_public_pages         = true
+    members_can_create_private_pages        = true
+    members_can_fork_private_repositories   = true
 
     # Base Permissions
     default_repository_permission = "read"
@@ -111,10 +129,10 @@ module "github_governance" {
       squash_merge_commit_message = "COMMIT_MESSAGES"
     }
 
-    # Enterprise-only: Internal repository
-    "internal-tools" = var.github_plan == "enterprise" ? {
+    # Internal tools repository
+    "internal-tools" = {
       description = "Internal development tools"
-      visibility  = "internal"
+      visibility  = "private" # Changed from "internal" (enterprise-only) to "private"
       topics      = ["tools", "internal", "devtools"]
 
       has_issues   = true
@@ -124,7 +142,7 @@ module "github_governance" {
       vulnerability_alerts   = true
       allow_squash_merge     = true
       delete_branch_on_merge = true
-    } : null
+    }
 
     # Repository with advanced branch protection
     "critical-app" = {
@@ -224,10 +242,12 @@ module "github_governance" {
 
   # Encrypted Secrets (base64 encoded with organization public key)
   # Use GitHub CLI to encrypt: gh secret set SECRET_NAME --body "value"
+  # Filter out empty values as they are not valid encrypted secrets
   secrets_encrypted = {
-    # Example placeholders - replace with actual encrypted values
-    "DEPLOY_TOKEN" = var.deploy_token_encrypted
-    "NPM_TOKEN"    = var.npm_token_encrypted
+    for k, v in {
+      "DEPLOY_TOKEN" = var.deploy_token_encrypted
+      "NPM_TOKEN"    = var.npm_token_encrypted
+    } : k => v if v != ""
   }
 
   # Organization Webhooks (requires Team+ plan)
@@ -258,10 +278,10 @@ module "github_governance" {
         "security_advisory"
       ]
     }
-  } : {}
+  } : null
 
   # Custom Repository Roles (requires Enterprise plan)
-  custom_roles = var.github_plan == "enterprise" ? {
+  repository_roles = var.github_plan == "enterprise" ? {
     "deployer" = {
       base_role   = "write"
       description = "Can deploy to production environments"
@@ -283,7 +303,7 @@ module "github_governance" {
         "write_security"
       ]
     }
-  } : {}
+  } : null
 
   # Organization Rulesets (requires Team+ plan)
   rulesets = var.github_plan != "free" ? {
@@ -310,15 +330,8 @@ module "github_governance" {
         }
 
         # Require status checks
-        required_status_checks = {
-          strict_required_status_checks_policy = true
-          required_status_checks = [
-            {
-              context        = "ci/tests"
-              integration_id = null
-            }
-          ]
-        }
+        required_status_checks               = { "ci/tests" = "" }
+        strict_required_status_checks_policy = true
 
         # Basic protections
         deletion                = true
@@ -345,16 +358,14 @@ module "github_governance" {
       }
 
       rules = {
-        required_workflows = {
-          required_workflows = [
-            {
-              path          = ".github/workflows/security-scan.yml"
-              ref           = "refs/heads/main"
-              repository_id = null # Use organization workflow
-            }
-          ]
-        }
+        required_workflows = [
+          {
+            repository = "my-org/.github"
+            path       = ".github/workflows/security-scan.yml"
+            ref        = "refs/heads/main"
+          }
+        ]
       }
     }
-  } : {}
+  } : null
 }

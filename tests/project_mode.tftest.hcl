@@ -1,5 +1,9 @@
 mock_provider "github" {}
 
+mock_provider "kubernetes" {}
+
+mock_provider "helm" {}
+
 override_data {
   target = data.github_repositories.all[0]
   values = {

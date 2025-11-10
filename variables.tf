@@ -670,6 +670,16 @@ variable "runner_groups" {
     workflows                 = optional(set(string))
     repositories              = optional(set(string), [])
     allow_public_repositories = optional(bool)
+    scale_set = optional(object({
+      namespace        = optional(string, "arc-runners")
+      create_namespace = optional(bool, true)
+      version          = optional(string, "0.13.0")
+      min_runners      = optional(number, 1)
+      max_runners      = optional(number, 5)
+      runner_image     = optional(string, "ghcr.io/actions/actions-runner:latest")
+      pull_always      = optional(bool, true)
+      container_mode   = optional(string, "dind")
+    }))
   }))
   default = {}
   validation {
@@ -681,6 +691,52 @@ variable "runner_groups" {
 # ================================================
 # GitHub Actions & CI/CD
 # ================================================
+
+variable "actions_runner_controller" {
+  description = <<-EOT
+    Actions Runner Controller configuration for scale sets.
+    
+    Required when using scale_set in runner_groups.
+    The controller manages all scale sets in the cluster.
+    
+    Example:
+      actions_runner_controller = {
+        name             = "arc"
+        namespace        = "arc-systems"
+        create_namespace = true
+        version          = "0.13.0"
+        github_token     = var.github_token  # or use github_app_* vars
+      }
+  EOT
+  type = object({
+    name                       = optional(string, "arc")
+    namespace                  = optional(string, "arc-systems")
+    create_namespace           = optional(bool, true)
+    version                    = optional(string, "0.13.0")
+    github_token               = optional(string)
+    github_app_id              = optional(number)
+    github_app_private_key     = optional(string)
+    github_app_installation_id = optional(number)
+    private_registry           = optional(string)
+    private_registry_username  = optional(string)
+    private_registry_password  = optional(string)
+  })
+  default   = null
+  sensitive = true
+  validation {
+    condition     = var.actions_runner_controller == null || can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.actions_runner_controller.version))
+    error_message = "Version format must be <major>.<minor>.<patch> (example: 0.13.0)"
+  }
+  validation {
+    condition = var.actions_runner_controller == null || (
+      try(var.actions_runner_controller.github_token, null) != null ||
+      (try(var.actions_runner_controller.github_app_id, null) != null &&
+        try(var.actions_runner_controller.github_app_private_key, null) != null &&
+      try(var.actions_runner_controller.github_app_installation_id, null) != null)
+    )
+    error_message = "Either github_token or all github_app_* fields must be provided."
+  }
+}
 
 variable "repository_roles" {
   description = <<-EOT
@@ -752,7 +808,7 @@ variable "webhooks" {
 
   validation {
     condition = alltrue([
-      for name, webhook in var.webhooks :
+      for name, webhook in coalesce(var.webhooks, {}) :
       can(regex("^https?://", webhook.url))
     ])
     error_message = "Webhook URLs must start with http:// or https://."
@@ -760,7 +816,7 @@ variable "webhooks" {
 
   validation {
     condition = alltrue([
-      for name, webhook in var.webhooks :
+      for name, webhook in coalesce(var.webhooks, {}) :
       length(webhook.events) > 0
     ])
     error_message = "Webhooks must have at least one event configured."
@@ -768,7 +824,7 @@ variable "webhooks" {
 
   validation {
     condition = alltrue([
-      for name, webhook in var.webhooks :
+      for name, webhook in coalesce(var.webhooks, {}) :
       webhook.insecure_ssl == true || webhook.secret != null || !can(regex("^https://", webhook.url))
     ])
     error_message = "SECURITY: Webhooks using HTTPS with insecure_ssl=false should have a secret configured to verify payload authenticity."
@@ -776,7 +832,7 @@ variable "webhooks" {
 
   validation {
     condition = alltrue([
-      for name, webhook in var.webhooks :
+      for name, webhook in coalesce(var.webhooks, {}) :
       !can(regex("^http://", webhook.url)) || webhook.insecure_ssl == true
     ])
     error_message = "SECURITY WARNING: HTTP webhooks (non-HTTPS) detected. Consider using HTTPS for secure communication."

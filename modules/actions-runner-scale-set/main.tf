@@ -24,6 +24,10 @@ locals {
   github_creds_secret_name     = "arc-github-creds"
   private_registry_secret_name = "arc-private-registry-creds"
 
+  # Create a map of scale sets that need namespace creation
+  # We do this in a local to avoid using sensitive values in for_each
+  scale_sets_with_namespace = { for k, v in var.scale_sets : k => v if v.create_namespace == true }
+
   github_repositories = var.github_repositories != null ? var.github_repositories : try(data.github_repositories.all[0], null)
   repository_id = { for r in try(local.github_repositories.names, []) :
     r => element(local.github_repositories.repo_ids, index(local.github_repositories.names, r))
@@ -91,13 +95,17 @@ resource "kubernetes_secret" "github_creds" {
 }
 
 resource "kubernetes_secret" "private_registry_creds" {
-  for_each = { for k, v in var.scale_sets : k => v if v.create_namespace == true && var.private_registry != null }
+  # Create secret for each scale set that creates a namespace
+  for_each = local.scale_sets_with_namespace
 
   metadata {
     name      = local.private_registry_secret_name
     namespace = kubernetes_namespace.scale_set[each.key].metadata[0].name
   }
-  data = {
+
+  # Provide dummy data if no private registry is configured
+  # The secret will exist but won't be used by helm if not referenced
+  data = var.private_registry != null ? {
     ".dockerconfigjson" = jsonencode({
       auths = {
         format("%s", var.private_registry) = {
@@ -108,7 +116,12 @@ resource "kubernetes_secret" "private_registry_creds" {
         }
       }
     })
+    } : {
+    ".dockerconfigjson" = jsonencode({
+      auths = {}
+    })
   }
+
   type = "kubernetes.io/dockerconfigjson"
 }
 
@@ -157,12 +170,12 @@ resource "helm_release" "scale_set" {
       name  = "template.spec.containers[0].image"
       value = each.value.runner_image
     }],
-    var.private_registry == null ? [] : [
+    var.private_registry != null ? [
       {
         name  = "template.spec.imagePullSecrets[0].name"
         value = local.private_registry_secret_name
       }
-    ],
+    ] : [],
     each.value.container_mode == null ? [] : [
       {
         name  = "containerMode.type"

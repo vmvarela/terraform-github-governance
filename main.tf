@@ -163,7 +163,7 @@ data "github_organization" "this" {
 # Validate organization plan for features that require paid plans
 check "organization_plan_validation" {
   assert {
-    condition = length(var.webhooks) == 0 || local.github_plan != "free"
+    condition = try(length(var.webhooks), 0) == 0 || local.github_plan != "free"
 
     error_message = <<-EOT
       [TF-GH-001] ❌ Organization webhooks require GitHub Team, Business, or Enterprise plan.
@@ -180,7 +180,7 @@ check "organization_plan_validation" {
   }
 
   assert {
-    condition = length(var.rulesets) == 0 || local.github_plan != "free"
+    condition = try(length(var.rulesets), 0) == 0 || local.github_plan != "free"
 
     error_message = <<-EOT
       [TF-GH-002] ❌ Organization rulesets require GitHub Team, Business, or Enterprise plan.
@@ -197,7 +197,7 @@ check "organization_plan_validation" {
   }
 
   assert {
-    condition = length(var.repository_roles) == 0 || contains(["enterprise", "enterprise_cloud"], local.github_plan)
+    condition = try(length(var.repository_roles), 0) == 0 || contains(["enterprise", "enterprise_cloud"], local.github_plan)
 
     error_message = <<-EOT
       [TF-GH-003] ❌ Custom repository roles require GitHub Enterprise plan.
@@ -431,7 +431,7 @@ resource "github_dependabot_organization_secret" "plaintext" {
 
 # dependabot_organization_secret (encrypted)
 resource "github_dependabot_organization_secret" "encrypted" {
-  for_each                = coalesce(var.dependabot_secrets_encrypted, (var.dependabot_copy_secrets ? var.secrets_encrypted : {}), {})
+  for_each                = var.dependabot_secrets_encrypted != null ? var.dependabot_secrets_encrypted : {}
   secret_name             = upper(replace(format(local.spec, each.key), "-", "_"))
   encrypted_value         = each.value
   visibility              = local.is_project_mode ? "selected" : "all"
@@ -601,11 +601,68 @@ resource "github_actions_runner_group" "this" {
   depends_on = [module.repo]
 }
 
+# actions_runner_scale_set
+module "actions_runner_scale_set" {
+  count  = var.actions_runner_controller != null ? 1 : 0
+  source = "./modules/actions-runner-scale-set"
+
+  github_org                 = local.github_org
+  github_token               = try(var.actions_runner_controller.github_token, null)
+  github_app_id              = try(var.actions_runner_controller.github_app_id, null)
+  github_app_private_key     = try(var.actions_runner_controller.github_app_private_key, null)
+  github_app_installation_id = try(var.actions_runner_controller.github_app_installation_id, null)
+  private_registry           = try(var.actions_runner_controller.private_registry, null)
+  private_registry_username  = try(var.actions_runner_controller.private_registry_username, null)
+  private_registry_password  = try(var.actions_runner_controller.private_registry_password, null)
+
+  controller = {
+    name             = try(var.actions_runner_controller.name, "arc")
+    namespace        = try(var.actions_runner_controller.namespace, "arc-systems")
+    create_namespace = try(var.actions_runner_controller.create_namespace, true)
+    version          = try(var.actions_runner_controller.version, "0.13.0")
+  }
+
+  # Only create scale sets for runner groups that have scale_set configured
+  scale_sets = {
+    for rg_name, rg_config in var.runner_groups :
+    rg_name => {
+      runner_group        = format(local.spec, rg_name)
+      create_runner_group = false # Already created by github_actions_runner_group.this
+      namespace           = try(rg_config.scale_set.namespace, "arc-runners")
+      create_namespace    = try(rg_config.scale_set.create_namespace, true)
+      version             = try(rg_config.scale_set.version, "0.13.0")
+      min_runners         = try(rg_config.scale_set.min_runners, 1)
+      max_runners         = try(rg_config.scale_set.max_runners, 5)
+      runner_image        = try(rg_config.scale_set.runner_image, "ghcr.io/actions/actions-runner:latest")
+      pull_always         = try(rg_config.scale_set.pull_always, true)
+      container_mode      = try(rg_config.scale_set.container_mode, "dind")
+      visibility = (
+        local.is_project_mode ? "selected" : try(rg_config.visibility, "all")
+      )
+      workflows = try(rg_config.workflows, null)
+      repositories = (
+        local.is_project_mode ?
+        [for repo_key in keys(local.repositories) : format(local.spec, repo_key)] :
+        try(rg_config.repositories, null) != null ? [for r in rg_config.repositories : format(local.spec, r)] : null
+      )
+    }
+    if try(rg_config.scale_set, null) != null
+  }
+
+  # Pass repository information for selected visibility
+  github_repositories = local.is_project_mode ? {
+    names    = [for repo_key in keys(local.repositories) : format(local.spec, repo_key)]
+    repo_ids = [for repo in module.repo : repo.repository.repo_id]
+  } : null
+
+  depends_on = [github_actions_runner_group.this, module.repo]
+}
+
 # organization_repository_role
 # NOTE: Using deprecated github_organization_custom_role due to provider bug in github_organization_repository_role
 # TODO: Migrate to github_organization_repository_role when provider issue is fixed
 resource "github_organization_custom_role" "this" {
-  for_each    = var.mode == "organization" ? var.repository_roles : {}
+  for_each    = var.mode == "organization" ? coalesce(var.repository_roles, {}) : {}
   name        = each.key
   description = each.value.description
   base_role   = each.value.base_role
@@ -616,7 +673,7 @@ resource "github_organization_custom_role" "this" {
 # NOTE: Organization webhooks require GitHub Team or Enterprise plan.
 # For GitHub Free organizations, use repository-level webhooks instead.
 resource "github_organization_webhook" "this" {
-  for_each = var.mode == "organization" ? var.webhooks : {}
+  for_each = var.mode == "organization" ? coalesce(var.webhooks, {}) : {}
   active   = true
   configuration {
     url          = each.value.url

@@ -29,12 +29,12 @@ variable "deploy_token_encrypted" {
   description = "Encrypted deploy token (base64 encoded with organization public key)"
   type        = string
   default     = ""
-  sensitive   = true
+  # Not marked as sensitive because the value is already encrypted
 }
 
 variable "npm_token_encrypted" {
   description = "Encrypted NPM token (base64 encoded with organization public key)"
   type        = string
   default     = ""
-  sensitive   = true
+  # Not marked as sensitive because the value is already encrypted
 }

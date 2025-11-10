@@ -155,7 +155,6 @@ resource "github_repository" "this" {
   merge_commit_title          = var.merge_commit_title
   merge_commit_message        = var.merge_commit_message
   delete_branch_on_merge      = var.delete_branch_on_merge
-  web_commit_signoff_required = var.web_commit_signoff_required
   auto_init                   = var.auto_init != null || var.default_branch != null
   gitignore_template          = var.gitignore_template
   license_template            = var.license_template
@@ -164,6 +163,7 @@ resource "github_repository" "this" {
   topics                      = var.topics
   vulnerability_alerts        = var.enable_vulnerability_alerts
   allow_update_branch         = var.allow_update_branch
+  web_commit_signoff_required = var.web_commit_signoff_required
 
   dynamic "pages" {
     for_each = var.pages_build_type != null ? [1] : []
