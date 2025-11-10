@@ -330,7 +330,7 @@ run "validate_module_outputs" {
 
   # Verify that the scale_set output exists
   assert {
-    condition     = output.scale_set != null
-    error_message = "The 'scale_set' output must be defined"
+    condition     = output.scale_sets != null
+    error_message = "The 'scale_sets' output must be defined"
   }
 }
