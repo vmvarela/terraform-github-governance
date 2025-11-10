@@ -311,6 +311,82 @@ run "test_scale_set_with_private_registry" {
   }
 }
 
+run "test_scale_set_shared_namespace" {
+  command = plan
+
+  variables {
+    mode       = "organization"
+    name       = "test-org"
+    github_org = "test-org"
+    repositories = {
+      "repo1" = {
+        description = "Test repo"
+      }
+      "repo2" = {
+        description = "Another repo"
+      }
+    }
+
+    runner_groups = {
+      "prod-runners" = {
+        visibility = "all"
+        scale_set = {
+          namespace        = "arc-shared"
+          create_namespace = true
+          min_runners      = 2
+          max_runners      = 4
+        }
+      }
+      "prod-runners-blue" = {
+        visibility = "all"
+        scale_set = {
+          namespace        = "arc-shared"
+          create_namespace = true
+          min_runners      = 1
+          max_runners      = 3
+        }
+      }
+    }
+
+    actions_runner_controller = {
+      name             = "arc-controller"
+      namespace        = "arc-system"
+      create_namespace = true
+      version          = "0.13.0"
+      github_token     = "ghp_test123456789"
+    }
+
+    settings = {
+      billing_email = "test@example.com"
+    }
+  }
+
+  assert {
+    condition     = module.actions_runner_scale_set[0].scale_set_count == 2
+    error_message = "Should create two scale sets"
+  }
+
+  assert {
+    condition     = length(module.actions_runner_scale_set[0].namespace_names) == 1
+    error_message = "Shared namespace should be created only once"
+  }
+
+  assert {
+    condition     = length(distinct(values(module.actions_runner_scale_set[0].github_secret_names))) == 1
+    error_message = "GitHub credentials secret should be reused across scale sets in the same namespace"
+  }
+
+  assert {
+    condition     = module.actions_runner_scale_set[0].scale_sets["prod-runners"].namespace == "arc-shared"
+    error_message = "prod-runners scale set should target arc-shared namespace"
+  }
+
+  assert {
+    condition     = module.actions_runner_scale_set[0].scale_sets["prod-runners-blue"].namespace == "arc-shared"
+    error_message = "prod-runners-blue scale set should target arc-shared namespace"
+  }
+}
+
 run "test_scale_set_defaults" {
   command = plan
 

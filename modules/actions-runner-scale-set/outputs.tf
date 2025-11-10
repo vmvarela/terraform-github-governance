@@ -67,10 +67,14 @@ output "runner_group_ids" {
 # Kubernetes resources outputs
 output "namespaces" {
   description = "Map of namespaces created for scale sets."
-  value = { for k, v in kubernetes_namespace.scale_set : k => {
-    name = v.metadata[0].name
-    id   = v.id
-  } }
+  value = {
+    for scale_set, config in var.scale_sets :
+    scale_set => {
+      name = kubernetes_namespace.scale_set[config.namespace].metadata[0].name
+      id   = kubernetes_namespace.scale_set[config.namespace].id
+    }
+    if contains(keys(kubernetes_namespace.scale_set), config.namespace)
+  }
 }
 
 output "namespace_names" {
@@ -80,7 +84,11 @@ output "namespace_names" {
 
 output "github_secret_names" {
   description = "Map of scale set names to their GitHub credentials secret names."
-  value       = { for k, v in kubernetes_secret.github_creds : k => v.metadata[0].name }
+  value = {
+    for scale_set, config in var.scale_sets :
+    scale_set => kubernetes_secret.github_creds[config.namespace].metadata[0].name
+    if contains(keys(kubernetes_secret.github_creds), config.namespace)
+  }
 }
 
 output "has_private_registry" {

@@ -24,14 +24,32 @@ locals {
   github_creds_secret_name     = "arc-github-creds"
   private_registry_secret_name = "arc-private-registry-creds"
 
-  # Create a map of scale sets that need namespace creation
-  # We do this in a local to avoid using sensitive values in for_each
-  scale_sets_with_namespace = { for k, v in var.scale_sets : k => v if v.create_namespace == true }
-
   github_repositories = var.github_repositories != null ? var.github_repositories : try(data.github_repositories.all[0], null)
   repository_id = { for r in try(local.github_repositories.names, []) :
     r => element(local.github_repositories.repo_ids, index(local.github_repositories.names, r))
   }
+
+  scale_sets_expanded = [
+    for name, cfg in var.scale_sets :
+    merge(cfg, { name = name })
+  ]
+
+  namespaces = {
+    for namespace in distinct([for ss in local.scale_sets_expanded : ss.namespace]) :
+    namespace => {
+      create_namespace = anytrue([
+        for ss in local.scale_sets_expanded : try(ss.create_namespace, true)
+        if ss.namespace == namespace
+      ])
+    }
+  }
+
+  managed_namespaces = {
+    for namespace, attrs in local.namespaces :
+    namespace => attrs
+    if attrs.create_namespace
+  }
+
 }
 
 data "github_repositories" "all" {
@@ -70,21 +88,22 @@ resource "helm_release" "controller" {
   depends_on = [kubernetes_namespace.controller]
 }
 
-
 resource "kubernetes_namespace" "scale_set" {
-  for_each = { for k, v in var.scale_sets : k => v if v.create_namespace == true }
+  for_each = local.managed_namespaces
 
   metadata {
-    name = each.value.namespace
+    name = each.key
   }
 }
 
 resource "kubernetes_secret" "github_creds" {
-  for_each = { for k, v in var.scale_sets : k => v if v.create_namespace == true }
+  for_each = local.managed_namespaces
+
   metadata {
     name      = local.github_creds_secret_name
     namespace = kubernetes_namespace.scale_set[each.key].metadata[0].name
   }
+
   data = var.github_token != null ? {
     github_token = tostring(var.github_token)
     } : {
@@ -95,8 +114,7 @@ resource "kubernetes_secret" "github_creds" {
 }
 
 resource "kubernetes_secret" "private_registry_creds" {
-  # Create secret for each scale set that creates a namespace
-  for_each = local.scale_sets_with_namespace
+  for_each = local.managed_namespaces
 
   metadata {
     name      = local.private_registry_secret_name
