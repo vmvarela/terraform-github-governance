@@ -59,7 +59,7 @@ output "repository_ssh_clone_url" {
 
 output "default_branch" {
   description = "Name of the default branch"
-  value       = github_repository.this.default_branch
+  value       = try(github_branch_default.this[0].branch, null)
 }
 
 output "visibility" {

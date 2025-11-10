@@ -15,68 +15,6 @@ module "webhook" {
 ```
 
 <!-- BEGIN_TF_DOCS -->
-
-
-## Usage
-
-### Basic Example (Organization Mode)
-
-```hcl
-module "github" {
-  source  = "vmvarela/governance/github"
-  version = "~> 1.0"
-
-  mode = "organization"
-  name = "my-organization"
-
-  settings = {
-    billing_email = "billing@example.com"
-  }
-
-  repositories = {
-    "my-app" = {
-      description = "My application"
-      visibility  = "private"
-    }
-  }
-}
-```
-
-### Project Mode Example
-
-```hcl
-module "project_x" {
-  source  = "vmvarela/governance/github"
-  version = "~> 1.0"
-
-  mode       = "project"
-  name       = "project-x"
-  github_org = "my-organization"
-  spec       = "project-x-%s"
-
-  settings = {
-    billing_email = "billing@example.com"
-  }
-
-  repositories = {
-    "backend"  = { description = "Backend API" }
-    "frontend" = { description = "Frontend App" }
-  }
-}
-```
-
-## Examples
-
-- [Simple](./examples/simple) - Minimal configuration to get started
-- [Complete](./examples/complete) - Comprehensive example with all features
-- [Mode Comparison](./examples/mode-comparison) - Organization vs Project modes
-- [Repository References](./examples/repository-references) - Working with repository IDs
-
-## Submodules
-
-- [repository](./modules/repository) - Standalone repository management
-- [actions-runner-scale-set](./modules/actions-runner-scale-set) - Kubernetes-based GitHub Actions runners
-
 ## Requirements
 
 | Name | Version |
@@ -105,17 +43,23 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_content_type"></a> [content\_type](#input\_content\_type) | The content type for the payload. Valid values are either `form` or `json`. | `string` | n/a | yes |
-| <a name="input_repository"></a> [repository](#input\_repository) | The repository of the webhook. | `string` | n/a | yes |
-| <a name="input_url"></a> [url](#input\_url) | The URL of the webhook. | `string` | n/a | yes |
 | <a name="input_events"></a> [events](#input\_events) | A list of events which should trigger the webhook. See a list of [available events](https://docs.github.com/es/webhooks/webhook-events-and-payloads). | `set(string)` | `[]` | no |
 | <a name="input_insecure_ssl"></a> [insecure\_ssl](#input\_insecure\_ssl) | Insecure SSL boolean toggle. | `bool` | `false` | no |
+| <a name="input_repository"></a> [repository](#input\_repository) | The repository of the webhook. | `string` | n/a | yes |
 | <a name="input_secret"></a> [secret](#input\_secret) | The shared secret for the webhook | `string` | `null` | no |
+| <a name="input_url"></a> [url](#input\_url) | The URL of the webhook. | `string` | n/a | yes |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_webhook"></a> [webhook](#output\_webhook) | Created webhook |
+| <a name="output_active"></a> [active](#output\_active) | Whether the webhook is active |
+| <a name="output_content_type"></a> [content\_type](#output\_content\_type) | Content type of the webhook payload |
+| <a name="output_events"></a> [events](#output\_events) | List of events that trigger the webhook |
+| <a name="output_id"></a> [id](#output\_id) | Numeric ID of the webhook |
+| <a name="output_insecure_ssl"></a> [insecure\_ssl](#output\_insecure\_ssl) | Whether to verify SSL certificates |
+| <a name="output_url"></a> [url](#output\_url) | URL of the webhook endpoint |
+| <a name="output_webhook"></a> [webhook](#output\_webhook) | Complete webhook object (use specific outputs for better terraform graph performance) |
 <!-- END_TF_DOCS -->
 
 ## Authors
