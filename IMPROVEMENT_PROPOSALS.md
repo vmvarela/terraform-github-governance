@@ -1027,7 +1027,7 @@ This guide explains all available outputs and how to use them effectively.
 
 ### Semana 1: Crítico
 - [x] Implementar outputs granulares en `modules/repository` ✅ (Commit: 84f179d)
-- [ ] Refactorizar locals en `main.tf`
+- [x] Refactorizar locals en `main.tf` ✅
 - [ ] Agregar outputs de summary en root module
 - [ ] Tests de validación para nuevos outputs
 

@@ -92,34 +92,86 @@ locals {
   # format spec for repository name
   spec = var.mode == "organization" ? "%s" : (var.spec != null ? replace(var.spec, "/[^a-zA-Z0-9-%]/", "") : "%s")
 
-  # merge settings, each repository and defaults
-  repositories = { for repo, data in var.repositories : coalesce(try(data.alias, null), repo) => merge(
-    { description = try(data.description, null) },
-    { for k in local.coalesce_keys : k => try(coalesce(lookup(local.settings, k, null), lookup(data, k, null), lookup(var.defaults, k, null)), null) },
-    { for k in local.union_keys : k =>
-      length(setunion(
-        [],
-        try(lookup(data, k, null), null) != null ? try(lookup(data, k, []), []) : [],
-        try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, []), []) : []
-      )) > 0 ?
-      setunion(
-        try(lookup(data, k, null), null) != null ? try(lookup(data, k, []), []) : [],
-        try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, []), []) : []
-      ) :
-      try(lookup(var.defaults, k, []), [])
-    },
-    { for k in local.merge_keys : k =>
-      length(merge(
-        try(lookup(data, k, null), null) != null ? try(lookup(data, k, {}), {}) : {},
-        try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, {}), {}) : {}
-      )) > 0 ?
-      merge(
-        try(lookup(data, k, null), null) != null ? try(lookup(data, k, {}), {}) : {},
-        try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, {}), {}) : {}
-      ) :
-      try(lookup(var.defaults, k, {}), {})
+  # ========================================================================
+  # REPOSITORY CONFIGURATION MERGE LOGIC (Refactored for readability)
+  # ========================================================================
+
+  # Step 1: Build base configuration per repository from coalesce_keys
+  # Priority: repository config > global settings > defaults
+  _repos_base_config = { for repo, data in var.repositories :
+    repo => {
+      for k in local.coalesce_keys :
+      k => try(
+        coalesce(
+          lookup(local.settings, k, null),
+          lookup(data, k, null),
+          lookup(var.defaults, k, null)
+        ),
+        null
+      )
     }
-  ) }
+  }
+
+  # Step 2: Build merge configuration per repository from merge_keys
+  # Merges: global settings + repository settings (repo overrides global)
+  _repos_merge_config = { for repo, data in var.repositories :
+    repo => {
+      for k in local.merge_keys :
+      k => (
+        length(merge(
+          try(lookup(data, k, null), null) != null ? try(lookup(data, k, {}), {}) : {},
+          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, {}), {}) : {}
+        )) > 0
+        ? merge(
+          try(lookup(data, k, null), null) != null ? try(lookup(data, k, {}), {}) : {},
+          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, {}), {}) : {}
+        )
+        : try(lookup(var.defaults, k, {}), {})
+      )
+    }
+  }
+
+  # Step 3: Build union configuration per repository from union_keys
+  # Combines: global settings + repository settings (union of both)
+  _repos_union_config = { for repo, data in var.repositories :
+    repo => {
+      for k in local.union_keys :
+      k => (
+        length(setunion(
+          [],
+          try(lookup(data, k, null), null) != null ? try(lookup(data, k, []), []) : [],
+          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, []), []) : []
+        )) > 0
+        ? setunion(
+          try(lookup(data, k, null), null) != null ? try(lookup(data, k, []), []) : [],
+          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, []), []) : []
+        )
+        : try(lookup(var.defaults, k, []), [])
+      )
+    }
+  }
+
+  # Step 4: Final assembly - Combine all configurations
+  # Use repository alias if provided, otherwise use key
+  repositories = { for repo, data in var.repositories :
+    coalesce(try(data.alias, null), repo) => merge(
+      # Description (separate as it's always repository-specific)
+      { description = try(data.description, null) },
+
+      # Base configuration (coalesced)
+      local._repos_base_config[repo],
+
+      # Merge configuration (merged maps)
+      local._repos_merge_config[repo],
+
+      # Union configuration (union of lists)
+      local._repos_union_config[repo]
+    )
+  }
+
+  # ========================================================================
+  # END REPOSITORY CONFIGURATION MERGE LOGIC
+  # ========================================================================
 
   github_org        = var.mode == "organization" ? var.name : var.github_org
   info_repositories = var.info_repositories != null ? var.info_repositories : try(data.github_repositories.all[0], null)
