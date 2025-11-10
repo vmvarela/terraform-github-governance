@@ -109,9 +109,9 @@ module "github_governance" {
     # github_app_installation_id = var.github_app_installation_id
 
     # Optional: Private registry for custom runner images
-    # private_registry          = var.private_registry
-    # private_registry_username = var.private_registry_username
-    # private_registry_password = var.private_registry_password
+    private_registry          = var.private_registry
+    private_registry_username = var.private_registry_username
+    private_registry_password = var.private_registry_password
   }
 
   # Organization settings

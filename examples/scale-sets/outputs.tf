@@ -7,4 +7,3 @@ output "runner_groups" {
   description = "Created runner groups"
   value       = module.github_governance.runner_group_ids
 }
-

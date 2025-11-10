@@ -10,26 +10,26 @@ variable "github_token" {
   default     = null
 }
 
-variable "github_app_id" {
-  description = "GitHub App ID (alternative to token)"
-  type        = number
-  sensitive   = true
-  default     = null
-}
-
-variable "github_app_private_key" {
-  description = "GitHub App private key in PEM format (alternative to token)"
-  type        = string
-  sensitive   = true
-  default     = null
-}
-
-variable "github_app_installation_id" {
-  description = "GitHub App Installation ID (alternative to token)"
-  type        = number
-  sensitive   = true
-  default     = null
-}
+# variable "github_app_id" {
+#   description = "GitHub App ID (alternative to token)"
+#   type        = number
+#   sensitive   = true
+#   default     = null
+# }
+#
+# variable "github_app_private_key" {
+#   description = "GitHub App private key in PEM format (alternative to token)"
+#   type        = string
+#   sensitive   = true
+#   default     = null
+# }
+#
+# variable "github_app_installation_id" {
+#   description = "GitHub App Installation ID (alternative to token)"
+#   type        = number
+#   sensitive   = true
+#   default     = null
+# }
 
 variable "billing_email" {
   description = "Billing email for the GitHub organization"
