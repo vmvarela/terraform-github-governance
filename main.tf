@@ -233,7 +233,7 @@ check "internal_repositories_validation" {
       Solutions:
         1. Change visibility to 'private' or 'public' for these repositories
         2. Upgrade to Business or Enterprise plan at: https://github.com/organizations/${local.github_org}/settings/billing
-      
+
       Documentation: https://docs.github.com/en/repositories/creating-and-managing-repositories/about-repositories#about-internal-repositories
     EOT
 }
@@ -611,9 +611,11 @@ module "actions_runner_scale_set" {
   github_app_id              = try(var.actions_runner_controller.github_app_id, null)
   github_app_private_key     = try(var.actions_runner_controller.github_app_private_key, null)
   github_app_installation_id = try(var.actions_runner_controller.github_app_installation_id, null)
-  private_registry           = try(var.actions_runner_controller.private_registry, null)
-  private_registry_username  = try(var.actions_runner_controller.private_registry_username, null)
-  private_registry_password  = try(var.actions_runner_controller.private_registry_password, null)
+  github_repositories        = local.info_repositories
+
+  private_registry          = try(var.actions_runner_controller.private_registry, null)
+  private_registry_username = try(var.actions_runner_controller.private_registry_username, null)
+  private_registry_password = try(var.actions_runner_controller.private_registry_password, null)
 
   controller = {
     name             = try(var.actions_runner_controller.name, "arc")
@@ -648,12 +650,6 @@ module "actions_runner_scale_set" {
     }
     if try(rg_config.scale_set, null) != null
   }
-
-  # Pass repository information for selected visibility
-  github_repositories = local.is_project_mode ? {
-    names    = [for repo_key in keys(local.repositories) : format(local.spec, repo_key)]
-    repo_ids = [for repo in module.repo : repo.repository.repo_id]
-  } : null
 
   depends_on = [github_actions_runner_group.this, module.repo]
 }

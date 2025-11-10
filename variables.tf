@@ -459,7 +459,7 @@ variable "secrets" {
 
       Terraform state files are not encrypted by default. Storing plaintext secrets
       in state exposes them to anyone with access to the state file.
-      
+
       Documentation: https://docs.github.com/en/actions/security-guides/encrypted-secrets
     EOT
   }
@@ -504,7 +504,7 @@ variable "dependabot_secrets" {
 
       Use dependabot_secrets_encrypted variable instead and encrypt with GitHub CLI:
         gh secret set SECRET_NAME --app dependabot --body "value"
-      
+
       Documentation: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/configuring-access-to-private-registries-for-dependabot
     EOT
   }
@@ -695,10 +695,10 @@ variable "runner_groups" {
 variable "actions_runner_controller" {
   description = <<-EOT
     Actions Runner Controller configuration for scale sets.
-    
+
     Required when using scale_set in runner_groups.
     The controller manages all scale sets in the cluster.
-    
+
     Example:
       actions_runner_controller = {
         name             = "arc"

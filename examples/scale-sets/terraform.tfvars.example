@@ -1,0 +1,23 @@
+# GitHub Organization
+github_org     = "my-organization"
+billing_email  = "billing@example.com"
+
+# GitHub Authentication - Choose one method:
+
+# Option 1: Personal Access Token
+github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Option 2: GitHub App (comment out github_token above and uncomment below)
+# github_app_id              = 123456
+# github_app_installation_id = 789012
+# github_app_private_key     = <<-EOT
+#   -----BEGIN RSA PRIVATE KEY-----
+#   ...your private key content...
+#   -----END RSA PRIVATE KEY-----
+# EOT
+
+# Optional: Private Container Registry
+# Uncomment if using custom runner images from a private registry
+# private_registry          = "myregistry.io"
+# private_registry_username = "myuser"
+# private_registry_password = "mypassword"

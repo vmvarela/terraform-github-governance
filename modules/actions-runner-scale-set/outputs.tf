@@ -91,19 +91,17 @@ output "has_private_registry" {
 output "private_registry" {
   description = "The private registry URL if configured."
   value       = var.private_registry
-  sensitive   = true
 }
 
 # Summary output
 output "summary" {
   description = "Summary of the scale sets deployment."
   value = {
-    controller_deployed   = var.controller != null
-    scale_sets_count      = length(helm_release.scale_set)
-    runner_groups_count   = length(github_actions_runner_group.this)
-    namespaces_count      = length(kubernetes_namespace.scale_set)
-    has_private_registry  = var.private_registry != null
-    github_org            = var.github_org
-    authentication_method = var.github_token != null ? "token" : "github_app"
+    controller_deployed  = var.controller != null
+    scale_sets_count     = length(helm_release.scale_set)
+    runner_groups_count  = length(github_actions_runner_group.this)
+    namespaces_count     = length(kubernetes_namespace.scale_set)
+    has_private_registry = var.private_registry != null
+    github_org           = var.github_org
   }
 }
