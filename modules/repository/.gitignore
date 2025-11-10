@@ -1,5 +1,6 @@
 # Local .terraform directories
 .terraform
+**/*.tfstate*
 **/.terraform/*
 
 # Terraform lockfile
@@ -37,8 +38,9 @@ terraform.rc
 .env
 .act
 
-# Ignore IDE files
-.vscode/
-.idea/
+deploy_keys
+corp
 
-examples/dev
+
+# ignore direnv file
+.envrc

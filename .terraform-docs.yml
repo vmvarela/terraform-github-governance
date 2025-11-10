@@ -1,0 +1,120 @@
+formatter: "markdown table"
+
+header-from: main.tf
+footer-from: ""
+
+recursive:
+  enabled: false
+  path: modules
+
+sections:
+  show:
+    - header
+    - requirements
+    - providers
+    - modules
+    - resources
+    - inputs
+    - outputs
+
+content: |-
+  {{ .Header }}
+
+  ## Usage
+
+  ### Basic Example (Organization Mode)
+
+  ```hcl
+  module "github" {
+    source  = "vmvarela/governance/github"
+    version = "~> 1.0"
+
+    mode = "organization"
+    name = "my-organization"
+
+    settings = {
+      billing_email = "billing@example.com"
+    }
+
+    repositories = {
+      "my-app" = {
+        description = "My application"
+        visibility  = "private"
+      }
+    }
+  }
+  ```
+
+  ### Project Mode Example
+
+  ```hcl
+  module "project_x" {
+    source  = "vmvarela/governance/github"
+    version = "~> 1.0"
+
+    mode       = "project"
+    name       = "project-x"
+    github_org = "my-organization"
+    spec       = "project-x-%s"
+
+    settings = {
+      billing_email = "billing@example.com"
+    }
+
+    repositories = {
+      "backend"  = { description = "Backend API" }
+      "frontend" = { description = "Frontend App" }
+    }
+  }
+  ```
+
+  ## Examples
+
+  - [Simple](./examples/simple) - Minimal configuration to get started
+  - [Complete](./examples/complete) - Comprehensive example with all features
+  - [Mode Comparison](./examples/mode-comparison) - Organization vs Project modes
+  - [Repository References](./examples/repository-references) - Working with repository IDs
+
+  ## Submodules
+
+  - [repository](./modules/repository) - Standalone repository management
+  - [actions-runner-scale-set](./modules/actions-runner-scale-set) - Kubernetes-based GitHub Actions runners
+
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Modules }}
+
+  {{ .Resources }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+    {{ .Content }}
+    <!-- END_TF_DOCS -->
+
+sort:
+  enabled: true
+  by: required
+
+settings:
+  anchor: true
+  color: true
+  default: true
+  description: true
+  escape: true
+  hide-empty: false
+  html: true
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true

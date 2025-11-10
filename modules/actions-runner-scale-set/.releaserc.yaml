@@ -1,0 +1,7 @@
+preset: conventionalcommits
+plugins:
+  - path: '@semantic-release/commit-analyzer'
+  - path: '@semantic-release/release-notes-generator'
+  - path: '@semantic-release/git'
+  - path: '@semantic-release/github'
+  - path: 'semantic-release-github-actions-tags'

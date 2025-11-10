@@ -1,0 +1,6 @@
+github_org   = "<your-github-org>"
+github_token = "<your-github-token>"
+
+# using kind cluster running locally with Docker Desktop
+kubernetes_config_path = "~/.kube/config"
+kubernetes_config_context = "docker-desktop"

@@ -1,0 +1,16 @@
+github_org                 = "<your-github-org>"
+github_app_id              = <your-github-app-id>
+github_app_private_key     = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+<your-github-app-private-key>
+-----END RSA PRIVATE KEY-----
+EOF
+github_app_installation_id = <your-github-app-installation-id>
+
+# using kind cluster running locally with Docker Desktop
+kubernetes_config_context  = "docker-desktop"
+kubernetes_config_path     = "~/.kube/config"
+
+private_registry           = "<your-private-registry>"
+private_registry_username  = "<your-private-registry-username>"
+private_registry_password  = "<your-private-registry-password>"

@@ -1,0 +1,5 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+name          = "your-organization-name"
+billing_email = "billing@example.com"
+github_token  = "ghp_your_github_personal_access_token"
