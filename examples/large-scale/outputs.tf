@@ -4,7 +4,7 @@
 
 output "organization_name" {
   description = "GitHub organization being managed"
-  value       = var.github_org
+  value       = var.organization_name
 }
 
 output "total_repositories" {

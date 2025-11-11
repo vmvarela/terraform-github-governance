@@ -36,14 +36,14 @@ provider "github" {
 module "github_org" {
   source = "../../"
 
-  mode          = "organization"
-  name          = var.organization_name
-  billing_email = var.billing_email
+  mode = "organization"
+  name = var.organization_name
 
   # ============================================================================
   # GLOBAL DEFAULTS - Applied to all repositories
   # ============================================================================
   defaults = {
+    billing_email               = var.billing_email
     visibility                  = "private"
     has_issues                  = true
     has_discussions             = false
@@ -163,7 +163,8 @@ module "github_org" {
             wait_timer      = 300
             reviewers_teams = ["platform-team"]
             deployment_branch_policy = {
-              protected_branches = true
+              protected_branches     = true
+              custom_branch_policies = false
             }
           }
         }
@@ -330,7 +331,6 @@ module "github_org" {
       }
 
       bypass_actors = {
-        teams               = ["platform-team"]
         organization_admins = [true]
       }
 
@@ -416,7 +416,7 @@ module "github_org" {
       }
 
       bypass_actors = {
-        teams = ["platform-team"]
+        organization_admins = [true]
       }
 
       rules = {
@@ -543,17 +543,5 @@ output "summary" {
     security_posture      = module.github_org.repositories_security_posture
     runner_groups         = length(module.github_org.runner_group_ids)
     organization_rulesets = length(module.github_org.ruleset_ids)
-  }
-}
-
-output "repositories_by_team" {
-  description = "Repositories grouped by primary team"
-  value = {
-    backend  = length([for k, r in module.github_org.repositories : k if can(regex("^backend-", k))])
-    frontend = length([for k, r in module.github_org.repositories : k if can(regex("^frontend-", k))])
-    infra    = length([for k, r in module.github_org.repositories : k if can(regex("^infra-", k))])
-    data     = length([for k, r in module.github_org.repositories : k if can(regex("^data-", k))])
-    mobile   = length([for k, r in module.github_org.repositories : k if can(regex("^mobile-", k))])
-    public   = module.github_org.repositories_summary.by_visibility.public
   }
 }
