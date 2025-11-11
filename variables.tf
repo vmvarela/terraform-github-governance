@@ -308,7 +308,7 @@ variable "repositories" {
     topics                                 = optional(list(string))
     actions_access_level                   = optional(string)
     actions_allowed_policy                 = optional(string)
-    actions_allowed_github                 = optional(bool)
+    actions_allowed_github                 = optional(bool, true)
     actions_allowed_verified               = optional(bool)
     actions_allowed_patterns               = optional(set(string))
     merge_commit_title                     = optional(string)
@@ -342,27 +342,85 @@ variable "repositories" {
       source_sha    = optional(string)
     })))
     deploy_keys = optional(map(object({
-      key       = string
-      read_only = optional(bool, true)
+      public_key = optional(string)
+      read_only  = optional(bool, true)
     })))
     deploy_keys_path = optional(string)
     environments = optional(map(object({
       wait_timer          = optional(number)
       can_admins_bypass   = optional(bool, true)
       prevent_self_review = optional(bool, false)
-      reviewers = optional(object({
-        teams = optional(list(number))
-        users = optional(list(number))
-      }))
+      reviewers_teams     = optional(list(number))
+      reviewers_users     = optional(list(number))
       deployment_branch_policy = optional(object({
         protected_branches     = bool
         custom_branch_policies = bool
       }))
     })))
-    files               = optional(list(string))
+    files = optional(list(object({
+      file                = string
+      content             = optional(string)
+      from_file           = optional(string)
+      branch              = optional(string)
+      commit_author       = optional(string)
+      commit_email        = optional(string)
+      commit_message      = optional(string)
+      overwrite_on_create = optional(bool, true)
+    })), [])
     issue_labels        = optional(map(string))
     issue_labels_colors = optional(map(string))
-    rulesets            = optional(map(any))
+    rulesets = optional(map(object({
+      enforcement = optional(string, "active") # "disabled", "active", "evaluate"
+      target      = optional(string, "branch") # "branch", "tag"
+
+      conditions = optional(object({
+        ref_name = object({
+          include = list(string)
+          exclude = list(string)
+        })
+      }))
+
+      bypass_actors = optional(object({
+        repository_roles = optional(list(object({
+          repository_role_id = string
+          bypass_mode        = optional(string, "always") # "always", "pull_request"
+        })), [])
+        teams = optional(list(object({
+          team_id     = number
+          bypass_mode = optional(string, "always")
+        })), [])
+        integrations = optional(list(object({
+          installation_id = number
+          bypass_mode     = optional(string, "always")
+        })), [])
+      }), {})
+
+      rules = optional(object({
+        creation                = optional(bool)
+        update                  = optional(bool)
+        deletion                = optional(bool)
+        required_linear_history = optional(bool)
+        required_signatures     = optional(bool)
+
+        pull_request = optional(object({
+          required_approving_review_count   = optional(number)
+          dismiss_stale_reviews_on_push     = optional(bool)
+          require_code_owner_review         = optional(bool)
+          require_last_push_approval        = optional(bool)
+          required_review_thread_resolution = optional(bool)
+        }))
+
+        required_status_checks = optional(object({
+          strict_required_status_checks_policy = optional(bool)
+          required_status_checks = list(object({
+            context        = string
+            integration_id = optional(number)
+          }))
+        }))
+
+        non_fast_forward = optional(bool)
+      }), {})
+    })), {})
     webhooks = optional(map(object({
       url          = string
       content_type = string
@@ -670,16 +728,6 @@ variable "runner_groups" {
     workflows                 = optional(set(string))
     repositories              = optional(set(string), [])
     allow_public_repositories = optional(bool)
-    scale_set = optional(object({
-      namespace        = optional(string, "arc-runners")
-      create_namespace = optional(bool, true)
-      version          = optional(string, "0.13.0")
-      min_runners      = optional(number, 1)
-      max_runners      = optional(number, 5)
-      runner_image     = optional(string, "ghcr.io/actions/actions-runner:latest")
-      pull_always      = optional(bool, true)
-      container_mode   = optional(string, "dind")
-    }))
   }))
   default = {}
   validation {
@@ -691,52 +739,6 @@ variable "runner_groups" {
 # ================================================
 # GitHub Actions & CI/CD
 # ================================================
-
-variable "actions_runner_controller" {
-  description = <<-EOT
-    Actions Runner Controller configuration for scale sets.
-
-    Required when using scale_set in runner_groups.
-    The controller manages all scale sets in the cluster.
-
-    Example:
-      actions_runner_controller = {
-        name             = "arc"
-        namespace        = "arc-systems"
-        create_namespace = true
-        version          = "0.13.0"
-        github_token     = var.github_token  # or use github_app_* vars
-      }
-  EOT
-  type = object({
-    name                       = optional(string, "arc")
-    namespace                  = optional(string, "arc-systems")
-    create_namespace           = optional(bool, true)
-    version                    = optional(string, "0.13.0")
-    github_token               = optional(string)
-    github_app_id              = optional(number)
-    github_app_private_key     = optional(string)
-    github_app_installation_id = optional(number)
-    private_registry           = optional(string)
-    private_registry_username  = optional(string)
-    private_registry_password  = optional(string)
-  })
-  default   = null
-  sensitive = true
-  validation {
-    condition     = var.actions_runner_controller == null || can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.actions_runner_controller.version))
-    error_message = "Version format must be <major>.<minor>.<patch> (example: 0.13.0)"
-  }
-  validation {
-    condition = var.actions_runner_controller == null || (
-      try(var.actions_runner_controller.github_token, null) != null ||
-      (try(var.actions_runner_controller.github_app_id, null) != null &&
-        try(var.actions_runner_controller.github_app_private_key, null) != null &&
-      try(var.actions_runner_controller.github_app_installation_id, null) != null)
-    )
-    error_message = "Either github_token or all github_app_* fields must be provided."
-  }
-}
 
 variable "repository_roles" {
   description = <<-EOT

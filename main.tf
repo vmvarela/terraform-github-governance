@@ -98,7 +98,7 @@ locals {
 
   # Step 1: Build base configuration per repository from coalesce_keys
   # Priority: repository config > global settings > defaults
-  _repos_base_config = { for repo, data in var.repositories :
+  repos_base_config = { for repo, data in var.repositories :
     repo => {
       for k in local.coalesce_keys :
       k => try(
@@ -114,39 +114,53 @@ locals {
 
   # Step 2: Build merge configuration per repository from merge_keys
   # Merges: global settings + repository settings (repo overrides global)
-  _repos_merge_config = { for repo, data in var.repositories :
+  repos_merge_config = { for repo, data in var.repositories :
     repo => {
       for k in local.merge_keys :
       k => (
         length(merge(
-          try(lookup(data, k, null), null) != null ? try(lookup(data, k, {}), {}) : {},
-          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, {}), {}) : {}
+          try(data[k], null) != null ? (can(data[k]) ? try(data[k], {}) : {}) : {},
+          try(local.settings[k], null) != null ? (can(local.settings[k]) ? try(local.settings[k], {}) : {}) : {}
         )) > 0
         ? merge(
-          try(lookup(data, k, null), null) != null ? try(lookup(data, k, {}), {}) : {},
-          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, {}), {}) : {}
+          try(data[k], null) != null ? (can(data[k]) ? try(data[k], {}) : {}) : {},
+          try(local.settings[k], null) != null ? (can(local.settings[k]) ? try(local.settings[k], {}) : {}) : {}
         )
-        : try(lookup(var.defaults, k, {}), {})
+        : try(var.defaults[k], {})
       )
     }
   }
 
   # Step 3: Build union configuration per repository from union_keys
   # Combines: global settings + repository settings (union of both)
-  _repos_union_config = { for repo, data in var.repositories :
+  # For 'files': uses concat (list of objects)
+  # For 'topics': uses setunion (set of strings)
+  repos_union_config = { for repo, data in var.repositories :
     repo => {
       for k in local.union_keys :
       k => (
-        length(setunion(
-          [],
-          try(lookup(data, k, null), null) != null ? try(lookup(data, k, []), []) : [],
-          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, []), []) : []
-        )) > 0
-        ? setunion(
-          try(lookup(data, k, null), null) != null ? try(lookup(data, k, []), []) : [],
-          try(lookup(local.settings, k, null), null) != null ? try(lookup(local.settings, k, []), []) : []
+        k == "files" ? (
+          length(concat(
+            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
+            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
+          )) > 0
+          ? concat(
+            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
+            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
+          )
+          : try(var.defaults[k], null) != null && can(tolist(var.defaults[k])) ? tolist(var.defaults[k]) : []
+          ) : tolist(
+          length(setunion(
+            [],
+            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
+            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
+          )) > 0
+          ? setunion(
+            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
+            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
+          )
+          : try(var.defaults[k], null) != null && can(tolist(var.defaults[k])) ? tolist(var.defaults[k]) : []
         )
-        : try(lookup(var.defaults, k, []), [])
       )
     }
   }
@@ -154,18 +168,18 @@ locals {
   # Step 4: Final assembly - Combine all configurations
   # Use repository alias if provided, otherwise use key
   repositories = { for repo, data in var.repositories :
-    coalesce(try(data.alias, null), repo) => merge(
+    repo => merge(
       # Description (separate as it's always repository-specific)
-      { description = try(data.description, null) },
+      { alias = try(data.alias, null), description = try(data.description, null) },
 
       # Base configuration (coalesced)
-      local._repos_base_config[repo],
+      local.repos_base_config[repo],
 
       # Merge configuration (merged maps)
-      local._repos_merge_config[repo],
+      local.repos_merge_config[repo],
 
       # Union configuration (union of lists)
-      local._repos_union_config[repo]
+      local.repos_union_config[repo]
     )
   }
 
@@ -182,8 +196,8 @@ locals {
   }
 
   # Map of repository name to ID from repositories managed by this module
-  github_repository_id_managed = { for name, repo in module.repo :
-    repo.repository.name => repo.repository.repo_id
+  github_repository_id_managed = { for name, repo in github_repository.repo :
+    repo.name => repo.repo_id
   }
 
   # Combined map: managed repos take precedence over external repos
@@ -197,7 +211,7 @@ locals {
 
   # DRY: Mode-related computed values
   is_project_mode        = var.mode == "project"
-  project_repository_ids = local.is_project_mode ? [for k, r in module.repo : r.repository.repo_id] : []
+  project_repository_ids = local.is_project_mode ? [for k, r in github_repository.repo : r.repo_id] : []
 }
 
 data "github_repositories" "all" {
@@ -366,83 +380,18 @@ resource "github_organization_settings" "this" {
   web_commit_signoff_required                                  = try(coalesce(local.settings.web_commit_signoff_required, local.defaults.web_commit_signoff_required), null)
 
   lifecycle {
-    prevent_destroy = false
+    # PROTECTION: Critical organization settings should not be destroyed without review
+    prevent_destroy = true
+
+    # IGNORE: Fields that are often modified outside Terraform via GitHub UI
     ignore_changes = [
-      # Ignore changes to these fields that are often modified outside Terraform
       name,
       description,
+      blog,
+      twitter_username,
+      location,
     ]
   }
-}
-
-module "repo" {
-  for_each                               = local.repositories
-  source                                 = "./modules/repository"
-  actions_access_level                   = each.value.actions_access_level
-  actions_allowed_github                 = each.value.actions_allowed_github
-  actions_allowed_patterns               = each.value.actions_allowed_patterns
-  actions_allowed_policy                 = each.value.actions_allowed_policy
-  actions_allowed_verified               = each.value.actions_allowed_verified
-  alias                                  = try(each.value.alias, each.key)
-  allow_auto_merge                       = each.value.allow_auto_merge
-  allow_merge_commit                     = each.value.allow_merge_commit
-  allow_rebase_merge                     = each.value.allow_rebase_merge
-  allow_squash_merge                     = each.value.allow_squash_merge
-  allow_update_branch                    = each.value.allow_update_branch
-  archived                               = each.value.archived
-  archive_on_destroy                     = each.value.archive_on_destroy
-  autolink_references                    = each.value.autolink_references
-  auto_init                              = each.value.auto_init
-  branches                               = each.value.branches
-  custom_properties                      = each.value.custom_properties
-  custom_properties_types                = each.value.custom_properties_types
-  default_branch                         = each.value.default_branch
-  delete_branch_on_merge                 = each.value.delete_branch_on_merge
-  dependabot_copy_secrets                = each.value.dependabot_copy_secrets
-  dependabot_secrets                     = each.value.dependabot_secrets
-  dependabot_secrets_encrypted           = each.value.dependabot_secrets_encrypted
-  deploy_keys                            = each.value.deploy_keys
-  deploy_keys_path                       = each.value.deploy_keys_path
-  description                            = try(each.value.description, null)
-  enable_actions                         = each.value.enable_actions
-  enable_advanced_security               = each.value.enable_advanced_security
-  enable_secret_scanning                 = each.value.enable_secret_scanning
-  enable_secret_scanning_push_protection = each.value.enable_secret_scanning_push_protection
-  enable_vulnerability_alerts            = each.value.enable_vulnerability_alerts
-  enable_dependabot_security_updates     = each.value.enable_dependabot_security_updates
-  environments                           = each.value.environments
-  files                                  = each.value.files
-  gitignore_template                     = each.value.gitignore_template
-  has_issues                             = each.value.has_issues
-  has_projects                           = each.value.has_projects
-  has_wiki                               = each.value.has_wiki
-  homepage                               = each.value.homepage
-  is_template                            = each.value.is_template
-  issue_labels                           = each.value.issue_labels
-  issue_labels_colors                    = each.value.issue_labels_colors
-  license_template                       = each.value.license_template
-  merge_commit_message                   = each.value.merge_commit_message
-  merge_commit_title                     = each.value.merge_commit_title
-  name                                   = try(format(local.spec, each.key), each.key)
-  pages_build_type                       = each.value.pages_build_type
-  pages_cname                            = each.value.pages_cname
-  pages_source_branch                    = each.value.pages_source_branch
-  pages_source_path                      = each.value.pages_source_path
-  private                                = each.value.private
-  rulesets                               = each.value.rulesets
-  secrets                                = each.value.secrets
-  secrets_encrypted                      = each.value.secrets_encrypted
-  squash_merge_commit_message            = each.value.squash_merge_commit_message
-  squash_merge_commit_title              = each.value.squash_merge_commit_title
-  teams                                  = each.value.teams
-  template                               = each.value.template
-  template_include_all_branches          = each.value.template_include_all_branches
-  topics                                 = each.value.topics
-  users                                  = each.value.users
-  variables                              = each.value.variables
-  visibility                             = each.value.visibility
-  web_commit_signoff_required            = each.value.web_commit_signoff_required
-  webhooks                               = each.value.webhooks
 }
 
 # actions_organization_variable
@@ -497,8 +446,11 @@ resource "github_organization_ruleset" "this" {
   enforcement = each.value.enforcement
 
   lifecycle {
-    # Prevent accidental destruction of critical rulesets
-    prevent_destroy = false
+    # PROTECTION: Critical rulesets should not be destroyed without review
+    prevent_destroy = true
+
+    # STRATEGY: Allow modifications without recreating the resource
+    create_before_destroy = true
   }
 
   rules {
@@ -649,61 +601,16 @@ resource "github_actions_runner_group" "this" {
   restricted_to_workflows = try(each.value.workflows, null) != null
   selected_workflows      = try(each.value.workflows, null)
 
+  lifecycle {
+    # PROTECTION: Runner groups contain infrastructure configuration
+    prevent_destroy = true
+
+    # STRATEGY: Allow modifications without recreating
+    create_before_destroy = true
+  }
+
   # Ensure repositories are resolved before creating runner group
-  depends_on = [module.repo]
-}
-
-# actions_runner_scale_set
-module "actions_runner_scale_set" {
-  count  = var.actions_runner_controller != null ? 1 : 0
-  source = "./modules/actions-runner-scale-set"
-
-  github_org                 = local.github_org
-  github_token               = try(var.actions_runner_controller.github_token, null)
-  github_app_id              = try(var.actions_runner_controller.github_app_id, null)
-  github_app_private_key     = try(var.actions_runner_controller.github_app_private_key, null)
-  github_app_installation_id = try(var.actions_runner_controller.github_app_installation_id, null)
-  github_repositories        = local.info_repositories
-
-  private_registry          = try(var.actions_runner_controller.private_registry, null)
-  private_registry_username = try(var.actions_runner_controller.private_registry_username, null)
-  private_registry_password = try(var.actions_runner_controller.private_registry_password, null)
-
-  controller = {
-    name             = try(var.actions_runner_controller.name, "arc")
-    namespace        = try(var.actions_runner_controller.namespace, "arc-systems")
-    create_namespace = try(var.actions_runner_controller.create_namespace, true)
-    version          = try(var.actions_runner_controller.version, "0.13.0")
-  }
-
-  # Only create scale sets for runner groups that have scale_set configured
-  scale_sets = {
-    for rg_name, rg_config in var.runner_groups :
-    rg_name => {
-      runner_group        = format(local.spec, rg_name)
-      create_runner_group = false # Already created by github_actions_runner_group.this
-      namespace           = try(rg_config.scale_set.namespace, "arc-runners")
-      create_namespace    = try(rg_config.scale_set.create_namespace, true)
-      version             = try(rg_config.scale_set.version, "0.13.0")
-      min_runners         = try(rg_config.scale_set.min_runners, 1)
-      max_runners         = try(rg_config.scale_set.max_runners, 5)
-      runner_image        = try(rg_config.scale_set.runner_image, "ghcr.io/actions/actions-runner:latest")
-      pull_always         = try(rg_config.scale_set.pull_always, true)
-      container_mode      = try(rg_config.scale_set.container_mode, "dind")
-      visibility = (
-        local.is_project_mode ? "selected" : try(rg_config.visibility, "all")
-      )
-      workflows = try(rg_config.workflows, null)
-      repositories = (
-        local.is_project_mode ?
-        [for repo_key in keys(local.repositories) : format(local.spec, repo_key)] :
-        try(rg_config.repositories, null) != null ? [for r in rg_config.repositories : format(local.spec, r)] : null
-      )
-    }
-    if try(rg_config.scale_set, null) != null
-  }
-
-  depends_on = [github_actions_runner_group.this, module.repo]
+  depends_on = [github_repository.repo]
 }
 
 # organization_repository_role

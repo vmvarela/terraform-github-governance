@@ -15,8 +15,8 @@ output "organization_id" {
 }
 
 output "repositories" {
-  description = "Repositories managed by the module (complete module outputs)"
-  value       = module.repo
+  description = "Repositories managed by the module (complete repository objects)"
+  value       = github_repository.repo
 }
 
 output "repository_ids" {
@@ -37,7 +37,7 @@ output "repository_ids" {
 output "repository_names" {
   description = "Map of repository keys to their actual names (after applying spec formatting)"
   value = {
-    for key, repo in module.repo : key => repo.repository.name
+    for key, repo in github_repository.repo : key => repo.name
   }
 }
 
@@ -100,39 +100,33 @@ output "organization_settings_summary" {
 output "repositories_summary" {
   description = "Summary statistics of repositories managed by this module"
   value = {
-    total = length(module.repo)
+    total = length(github_repository.repo)
     by_visibility = {
-      public   = length([for r in module.repo : r if try(r.repository.visibility, "private") == "public"])
-      private  = length([for r in module.repo : r if try(r.repository.visibility, "private") == "private"])
-      internal = length([for r in module.repo : r if try(r.repository.visibility, "private") == "internal"])
+      public   = length([for r in github_repository.repo : r if try(r.visibility, "private") == "public"])
+      private  = length([for r in github_repository.repo : r if try(r.visibility, "private") == "private"])
+      internal = length([for r in github_repository.repo : r if try(r.visibility, "private") == "internal"])
     }
-    archived  = length([for r in module.repo : r if try(r.repository.archived, false) == true])
-    templates = length([for r in module.repo : r if try(r.repository.is_template, false) == true])
+    archived  = length([for r in github_repository.repo : r if try(r.archived, false) == true])
+    templates = length([for r in github_repository.repo : r if try(r.is_template, false) == true])
   }
 }
 
 output "repositories_security_posture" {
   description = "Security configuration summary across all repositories"
   value = {
-    total_repos                          = length(module.repo)
-    with_advanced_security               = length([for r in module.repo : r if try(r.security_configuration.advanced_security_enabled, false) == true])
-    with_secret_scanning                 = length([for r in module.repo : r if try(r.security_configuration.secret_scanning_enabled, false) == true])
-    with_secret_scanning_push_protection = length([for r in module.repo : r if try(r.security_configuration.secret_scanning_push_protection, false) == true])
-    with_dependabot_alerts               = length([for r in module.repo : r if try(r.security_configuration.vulnerability_alerts_enabled, false) == true])
-    with_dependabot_security_updates     = length([for r in module.repo : r if try(r.security_configuration.dependabot_security_updates, false) == true])
+    total_repos                          = length(github_repository.repo)
+    with_advanced_security               = length([for r in github_repository.repo : r if try(r.security_and_analysis[0].advanced_security[0].status, "disabled") == "enabled"])
+    with_secret_scanning                 = length([for r in github_repository.repo : r if try(r.security_and_analysis[0].secret_scanning[0].status, "disabled") == "enabled"])
+    with_secret_scanning_push_protection = length([for r in github_repository.repo : r if try(r.security_and_analysis[0].secret_scanning_push_protection[0].status, "disabled") == "enabled"])
+    with_dependabot_alerts               = length([for r in github_repository.repo : r if try(r.vulnerability_alerts, false) == true])
+    with_dependabot_security_updates     = length([for k, v in github_repository_dependabot_security_updates.repo : k if try(v.enabled, false) == true])
   }
 }
 
 output "runner_groups_summary" {
-  description = "Summary of runner groups and scale sets deployment"
+  description = "Summary of runner groups configuration"
   value = {
-    total_runner_groups    = length(github_actions_runner_group.this)
-    groups_with_scale_sets = length([for k, v in var.runner_groups : k if try(v.scale_set, null) != null])
-    scale_sets_deployed    = try(module.actions_runner_scale_set[0].scale_set_count, 0)
-    total_capacity = {
-      min_runners = length(var.runner_groups) > 0 ? sum([for k, v in var.runner_groups : try(v.scale_set.min_runners, 0)]) : 0
-      max_runners = length(var.runner_groups) > 0 ? sum([for k, v in var.runner_groups : try(v.scale_set.max_runners, 0)]) : 0
-    }
+    total_runner_groups = length(github_actions_runner_group.this)
     by_visibility = {
       all      = length([for k, v in github_actions_runner_group.this : k if try(v.visibility, "all") == "all"])
       selected = length([for k, v in github_actions_runner_group.this : k if try(v.visibility, "all") == "selected"])
@@ -147,9 +141,8 @@ output "governance_summary" {
     mode                   = var.mode
     organization           = local.github_org
     plan                   = local.github_plan
-    repositories_managed   = length(module.repo)
+    repositories_managed   = length(github_repository.repo)
     runner_groups          = length(github_actions_runner_group.this)
-    scale_sets_deployed    = try(module.actions_runner_scale_set[0].scale_set_count, 0)
     organization_webhooks  = length(try(github_organization_webhook.this, {}))
     organization_rulesets  = length(github_organization_ruleset.this)
     custom_roles           = length(github_organization_custom_role.this)

@@ -69,6 +69,7 @@ module "github_governance" {
   repositories = {
     # Public repository - Open source project
     "public-library" = {
+      alias        = "public-lib"
       description  = "Open source library with full features"
       visibility   = "public"
       homepage_url = "https://example.com/public-library"

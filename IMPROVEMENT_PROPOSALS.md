@@ -142,7 +142,7 @@ output "features_enabled" {
 
 output "environments" {
   description = "Map of environment names to their configuration"
-  value = { for env_name, env_module in module.environment : 
+  value = { for env_name, env_module in module.environment :
     env_name => {
       name            = env_module.name
       id              = env_module.id
@@ -211,7 +211,7 @@ locals {
   # ========================================================================
   # REPOSITORY CONFIGURATION MERGE LOGIC (Refactored for readability)
   # ========================================================================
-  
+
   # Step 1: Build base configuration per repository from coalesce_keys
   # Priority: repository config > global settings > defaults
   _repos_base_config = { for repo, data in var.repositories :
@@ -224,7 +224,7 @@ locals {
       )
     }
   }
-  
+
   # Step 2: Build merge configuration per repository from merge_keys
   # Merges: global settings + repository settings (repo overrides global)
   _repos_merge_config = { for repo, data in var.repositories :
@@ -234,13 +234,13 @@ locals {
         length(merge(
           try(local.settings[k], {}),
           try(data[k], {})
-        )) > 0 
+        )) > 0
         ? merge(try(local.settings[k], {}), try(data[k], {}))
         : try(var.defaults[k], {})
       )
     }
   }
-  
+
   # Step 3: Build union configuration per repository from union_keys
   # Combines: global settings + repository settings (union of both)
   _repos_union_config = { for repo, data in var.repositories :
@@ -256,25 +256,25 @@ locals {
       )
     }
   }
-  
+
   # Step 4: Final assembly - Combine all configurations
   # Use repository alias if provided, otherwise use key
   repositories = { for repo, data in var.repositories :
     coalesce(try(data.alias, null), repo) => merge(
       # Description (separate as it's always repository-specific)
       { description = try(data.description, null) },
-      
+
       # Base configuration (coalesced)
       local._repos_base_config[repo],
-      
+
       # Merge configuration (merged maps)
       local._repos_merge_config[repo],
-      
+
       # Union configuration (union of lists)
       local._repos_union_config[repo]
     )
   }
-  
+
   # ========================================================================
   # END REPOSITORY CONFIGURATION MERGE LOGIC
   # ========================================================================
@@ -348,7 +348,7 @@ output "repository_ids" {
     Map of all repository names to their numeric IDs.
     Includes both repositories managed by this module and existing repositories in the organization.
     Useful for referencing repositories in rulesets, runner groups, and other resources.
-    
+
     Example usage in rulesets:
       selected_repository_ids = [
         module.github.repository_ids["my-repo"],
@@ -488,7 +488,7 @@ output "governance_summary" {
 variable "environments" {
   description = <<-EOT
     Repository environments configuration with protection rules and secrets.
-    
+
     Example:
     ```hcl
     environments = {
@@ -514,30 +514,30 @@ variable "environments" {
     }
     ```
   EOT
-  
+
   type = map(object({
     wait_timer          = optional(number)
     can_admins_bypass   = optional(bool, true)
     prevent_self_review = optional(bool, false)
-    
+
     reviewers = optional(object({
       teams = optional(list(number), [])
       users = optional(list(number), [])
     }), {})
-    
+
     deployment_branch_policy = optional(object({
       protected_branches     = bool
       custom_branch_policies = bool
     }))
-    
+
     # Secrets y variables del environment
     secrets           = optional(map(string), {})
     secrets_encrypted = optional(map(string), {})
     variables         = optional(map(string), {})
   }))
-  
+
   default = {}
-  
+
   validation {
     condition = alltrue([
       for env_name, env_config in var.environments :
@@ -545,11 +545,11 @@ variable "environments" {
     ])
     error_message = "wait_timer must be between 0 and 43200 minutes (30 days)"
   }
-  
+
   validation {
     condition = alltrue([
       for env_name, env_config in var.environments :
-      env_config.reviewers == null || 
+      env_config.reviewers == null ||
       (length(try(env_config.reviewers.teams, [])) + length(try(env_config.reviewers.users, []))) <= 6
     ])
     error_message = "Maximum 6 reviewers allowed per environment (teams + users combined)"
@@ -572,35 +572,35 @@ resource "github_repository" "this" {
   name        = var.name
   description = var.description
   # ... resto de configuración ...
-  
+
   lifecycle {
     # PROTECCIÓN: Prevenir destrucción accidental de repositorio
     # Para destruir: comentar esta línea y aplicar con -replace
     prevent_destroy = true
-    
+
     # IGNORAR: Cambios externos comunes (via UI de GitHub)
     ignore_changes = [
       # Topics suelen cambiarse via UI
       topics,
-      
+
       # Description puede editarse sin terraform
       description,
-      
+
       # Homepage puede cambiar fuera de terraform
       homepage_url,
     ]
-    
+
     # PRECONDICIÓN: Validar antes de crear
     precondition {
       condition     = var.name != ""
       error_message = "Repository name cannot be empty"
     }
-    
+
     precondition {
       condition     = can(regex("^[a-zA-Z0-9._-]+$", var.name))
       error_message = "Repository name can only contain alphanumeric characters, hyphens, underscores, and periods"
     }
-    
+
     # POSTCONDICIÓN: Validar después de crear
     postcondition {
       condition     = self.id != null && self.id != ""
@@ -615,11 +615,11 @@ resource "github_repository" "this" {
 resource "github_organization_settings" "this" {
   count = var.mode == "organization" ? 1 : 0
   # ... configuración ...
-  
+
   lifecycle {
     # CRÍTICO: No destruir settings de organización
     prevent_destroy = true
-    
+
     # Ignorar campos que cambian frecuentemente
     ignore_changes = [
       name,
@@ -631,11 +631,11 @@ resource "github_organization_settings" "this" {
 resource "github_organization_ruleset" "this" {
   for_each = coalesce(var.rulesets, {})
   # ... configuración ...
-  
+
   lifecycle {
     # PROTECCIÓN: Rulesets críticos no deben destruirse sin revisión
     prevent_destroy = true
-    
+
     # Permitir que se modifique enforcement sin recrear
     create_before_destroy = true
   }
@@ -685,7 +685,7 @@ output "scale_sets" {
     namespace       = v.namespace
     chart_version   = v.version
     release_status  = v.status
-    
+
     # Scale set configuration
     runner_group    = coalesce(var.scale_sets[k].runner_group, k)
     min_runners     = var.scale_sets[k].min_runners
@@ -812,16 +812,16 @@ output "summary" {
     scale_sets_deployed  = length(helm_release.scale_set)
     runner_groups_created = length(github_actions_runner_group.this)
     namespaces_created   = length(kubernetes_namespace.scale_set)
-    
+
     # Configuration
     github_org           = var.github_org
     authentication       = var.github_token != null ? "token" : "github_app"
     private_registry     = var.private_registry != null
-    
+
     # Capacity
     total_min_runners    = sum([for ss in var.scale_sets : ss.min_runners])
     total_max_runners    = sum([for ss in var.scale_sets : ss.max_runners])
-    
+
     # Namespaces deduplication
     unique_namespaces    = length(distinct([for ss in var.scale_sets : ss.namespace]))
     shared_namespaces    = length(distinct([for ss in var.scale_sets : ss.namespace])) < length(var.scale_sets)
@@ -841,15 +841,15 @@ Agregar ejemplos inline en todas las variables complejas:
 variable "runner_groups" {
   description = <<-EOT
     GitHub Actions self-hosted runner groups configuration.
-    
+
     **Behavior by Mode:**
     - **PROJECT MODE:** Repositories are automatically scoped to module-managed repos only.
                        The 'repositories' field is IGNORED.
     - **ORGANIZATION MODE:** Can reference ANY repository in the organization.
                              Use 'repositories' field to specify which repos have access.
-    
+
     **Examples:**
-    
+
     ```hcl
     # Example 1: Simple runner group (organization mode)
     runner_groups = {
@@ -857,7 +857,7 @@ variable "runner_groups" {
         visibility = "all"  # Available to all repos
       }
     }
-    
+
     # Example 2: Selected repositories (organization mode)
     runner_groups = {
       "production" = {
@@ -865,7 +865,7 @@ variable "runner_groups" {
         repositories = ["api-service", "web-app", "worker"]
       }
     }
-    
+
     # Example 3: With scale set on Kubernetes
     runner_groups = {
       "ci-runners" = {
@@ -878,7 +878,7 @@ variable "runner_groups" {
         }
       }
     }
-    
+
     # Example 4: Workflow-restricted runners
     runner_groups = {
       "deploy-runners" = {
@@ -896,11 +896,11 @@ variable "runner_groups" {
     }
     ```
   EOT
-  
+
   type = map(object({
     # ... type definition ...
   }))
-  
+
   default = {}
 }
 ```
@@ -915,7 +915,7 @@ variable "runner_groups" {
 # Test: Múltiples scale sets en mismo namespace
 run "test_namespace_sharing" {
   command = plan
-  
+
   variables {
     scale_sets = {
       "frontend-runners" = {
@@ -930,12 +930,12 @@ run "test_namespace_sharing" {
       }
     }
   }
-  
+
   assert {
     condition = length(module.actions_runner_scale_set[0].namespaces_created) == 1
     error_message = "Should only create ONE namespace when sharing"
   }
-  
+
   assert {
     condition = length(module.actions_runner_scale_set[0].github_credentials_secrets) == 1
     error_message = "Should only create ONE github secret when sharing namespace"
@@ -945,14 +945,14 @@ run "test_namespace_sharing" {
 # Test: GitHub App authentication
 run "test_github_app_auth" {
   command = plan
-  
+
   variables {
     github_app_id = 123456
     github_app_installation_id = 789012
     github_app_private_key = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
     # No github_token provided
   }
-  
+
   assert {
     condition = module.actions_runner_scale_set[0].summary.authentication == "github_app"
     error_message = "Should use github_app authentication"
@@ -963,7 +963,7 @@ run "test_github_app_auth" {
 run "test_runner_capacity_validation" {
   command = plan
   expect_failures = [var.scale_sets]
-  
+
   variables {
     scale_sets = {
       "invalid" = {
@@ -1002,7 +1002,7 @@ This guide explains all available outputs and how to use them effectively.
    output "repo_url" {
      value = module.github.repositories["my-repo"].repository.html_url
    }
-   
+
    # ✅ Do this
    output "repo_url" {
      value = module.github.repository_urls["my-repo"]
@@ -1032,9 +1032,20 @@ This guide explains all available outputs and how to use them effectively.
 - [x] Tests de validación para nuevos outputs ✅ (30/30 passing)
 
 ### Semana 2: Importante
-- [ ] Type safety: reemplazar `any` por types explícitos
+- [x] Type safety: reemplazar `any` por types explícitos ✅ **COMPLETADO**
+  - ✅ `environments`: tipo explícito con validaciones (reviewers, deployment_branch_policy)
+  - ✅ `files`: list(object) con 8 campos tipados y validaciones
+  - ✅ `rulesets`: map(object) con estructura completa (conditions, bypass_actors, rules)
+  - ✅ `webhooks`: map(object) con validaciones de URL y content_type
+  - ✅ `custom_properties`: mantiene `map(any)` justificadamente (string o list(string))
+  - ✅ 0 variables con `type = any` sin justificación
+- [x] Lifecycle rules en recursos críticos ✅ **COMPLETADO**
+  - ✅ `github_repository`: prevent_destroy, ignore_changes, preconditions/postconditions
+  - ✅ `github_organization_settings`: prevent_destroy, ignore_changes
+  - ✅ `github_organization_ruleset`: prevent_destroy, create_before_destroy
+  - ✅ `github_actions_runner_group`: prevent_destroy, create_before_destroy (main + submodule)
+  - ✅ 109/109 tests passing (no regressions)
 - [ ] Simplificar outputs en `actions-runner-scale-set`
-- [ ] Lifecycle rules en recursos críticos
 - [ ] Documentar outputs en `docs/OUTPUTS_GUIDE.md`
 
 ### Semana 3: Deseable

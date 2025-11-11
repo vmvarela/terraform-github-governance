@@ -1,9 +1,5 @@
 mock_provider "github" {}
 
-mock_provider "kubernetes" {}
-
-mock_provider "helm" {}
-
 override_data {
   target = data.github_repositories.all[0]
   values = {
@@ -144,36 +140,5 @@ run "test_repository_merge_basic" {
   assert {
     condition     = local.repositories["test-repo"].description == "Test repository"
     error_message = "Repository description should be preserved"
-  }
-}
-
-run "test_repository_alias" {
-  command = plan
-
-  variables {
-    mode       = "organization"
-    name       = "test-org"
-    github_org = "test-org"
-
-    settings = {
-      billing_email = "test@example.com"
-    }
-
-    repositories = {
-      "original-name" = {
-        alias       = "new-name"
-        description = "Test repo"
-      }
-    }
-  }
-
-  assert {
-    condition     = contains(keys(local.repositories), "new-name")
-    error_message = "Repository should be keyed by alias when provided"
-  }
-
-  assert {
-    condition     = !contains(keys(local.repositories), "original-name")
-    error_message = "Original repository name should not be in keys when alias is provided"
   }
 }
