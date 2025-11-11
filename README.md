@@ -434,10 +434,16 @@ module "project_x" {
 
 ## Examples
 
+### Basic Examples
 - [Simple](./examples/simple) - Minimal configuration to get started
 - [Complete](./examples/complete) - Comprehensive example with all features
 - [Mode Comparison](./examples/mode-comparison) - Organization vs Project modes
 - [Repository References](./examples/repository-references) - Working with repository IDs
+
+### Advanced Examples (Production-Ready)
+- [**Migration from Manual to IaC**](./examples/advanced/migration-from-manual/) - Complete guide for migrating existing GitHub organizations to Terraform (2-4 weeks timeline)
+- [**Multi-Region GitHub Enterprise**](./examples/advanced/multi-region/) - Architecture patterns for managing GitHub Enterprise across multiple regions, data centers, or compliance zones
+- [**Disaster Recovery Playbook**](./examples/advanced/disaster-recovery/) - Comprehensive DR procedures with RTO targets from 20 minutes to 2 hours depending on scenario
 
 ## Submodules
 
@@ -848,6 +854,11 @@ For managing large organizations (50+ repositories) or high-frequency operations
   - All error codes (TF-GH-001 through TF-GH-999)
   - Detailed solutions and examples
   - Quick reference for troubleshooting
+
+- **[Architecture Decision Records (ADRs)](./docs/adr/)** - Key architectural decisions and rationale
+  - [ADR-001: Repository Integration vs Submodule](./docs/adr/001-repository-integration-vs-submodule.md)
+  - [ADR-002: Dual Mode Pattern](./docs/adr/002-dual-mode-pattern.md)
+  - [ADR-003: Settings Cascade Priority](./docs/adr/003-settings-cascade-priority.md)
 
 ### 🎯 Quick Performance Tips
 
