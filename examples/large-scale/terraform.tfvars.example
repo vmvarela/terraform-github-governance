@@ -1,0 +1,14 @@
+# GitHub Organization Configuration
+github_org        = "your-github-org"
+organization_name = "large-scale-org"
+
+# Encrypted Secrets
+# These must be encrypted with your GitHub organization's public key
+# See: https://docs.github.com/en/rest/actions/secrets#create-or-update-an-organization-secret
+slack_webhook_encrypted     = "base64_encrypted_value_here"
+sonarqube_token_encrypted   = "base64_encrypted_value_here"
+npm_token_encrypted         = "base64_encrypted_value_here"
+
+# Example of how to encrypt secrets using GitHub CLI:
+# gh secret set SLACK_WEBHOOK_URL --org your-github-org --body "https://hooks.slack.com/services/..."
+# The module expects already encrypted values for API calls
