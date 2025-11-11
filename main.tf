@@ -97,7 +97,7 @@ locals {
   # ========================================================================
 
   # Step 1: Build base configuration per repository from coalesce_keys
-  # Priority: repository config > global settings > defaults
+  # Priority: settings > repository > defaults (policy enforcement)
   repos_base_config = { for repo, data in var.repositories :
     repo => {
       for k in local.coalesce_keys :
@@ -113,7 +113,7 @@ locals {
   }
 
   # Step 2: Build merge configuration per repository from merge_keys
-  # Merges: global settings + repository settings (repo overrides global)
+  # Priority: settings > repository > defaults (settings wins on key conflicts)
   repos_merge_config = { for repo, data in var.repositories :
     repo => {
       for k in local.merge_keys :
@@ -132,7 +132,7 @@ locals {
   }
 
   # Step 3: Build union configuration per repository from union_keys
-  # Combines: global settings + repository settings (union of both)
+  # Combines: repository + settings (union of both sets/lists)
   # For 'files': uses concat (list of objects)
   # For 'topics': uses setunion (set of strings)
   repos_union_config = { for repo, data in var.repositories :
