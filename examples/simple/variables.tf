@@ -1,24 +1,15 @@
-variable "github_token" {
-  description = "GitHub token"
-  type        = string
-  sensitive   = true
-  default     = null
-}
-
 variable "name" {
-  description = "The shorthand name of the project/organization."
+  description = "GitHub organization name"
   type        = string
-  default     = null
-}
-
-variable "description" {
-  description = "A brief description of the project/organization."
-  type        = string
-  default     = null
 }
 
 variable "billing_email" {
-  description = "The billing email for the organization."
+  description = "Billing email address for the organization"
   type        = string
-  default     = null
+}
+
+variable "github_token" {
+  description = "GitHub Personal Access Token with admin:org and repo scopes"
+  type        = string
+  sensitive   = true
 }

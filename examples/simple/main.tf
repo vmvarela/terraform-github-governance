@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1"
+  required_version = ">= 1.6"
   required_providers {
     github = {
       source  = "integrations/github"
@@ -14,88 +14,54 @@ provider "github" {
 }
 
 module "github" {
-  source      = "../../"
-  mode        = "organization"
-  name        = var.name
-  description = var.description
-  runner_groups = {
-    "myrunnergroup" = { allow_public_repositories = true }
-  }
-  # repository_roles = {
-  #   "myrole" = {
-  #     description = "My custom role"
-  #     base_role   = "write"
-  #     permissions = ["remove_assignee"]
-  #   }
-  # }
-  webhooks = {
-    "mywebhook" = {
-      url          = "https://www.mycompany.com/webhook"
-      content_type = "json"
-      events       = ["issues"]
-    }
-  }
-  variables = {
-    "SHARED_VAR" = "SHARED_VALUE"
-  }
-  settings = {
-    billing_email = var.billing_email
-    variables = {
-      MYVAR = "MYVAL"
-    }
-  }
-  repositories = {
-    "repo-1" = {
-      description = "First repository"
-      visibility  = "private"
-    }
-    "repo-2" = {
-      description = "Second repository"
-      visibility  = "public"
-    }
-  }
-}
+  source = "../../"
 
-module "project" {
-  source      = "../../"
-  mode        = "project"
-  name        = "project-x"
-  description = "Project X description"
-  github_org  = var.name
-  spec        = "x-%s"
-  runner_groups = {
-    "self-hosted" = {}
-  }
-  variables = {
-    "SHARED_VAR" = "SHARED_VALUE"
-  }
-  secrets = {
-    "SHARED_SECRET" = "xxx"
-  }
-  # rulesets = {
-  #   test = {
-  #     target  = "branch"
-  #     include = ["~ALL"]
-  #     required_workflows = [
-  #       "test-1/.github/workflows/test.yaml"
-  #     ]
-  #     forbidden_deletion = true
-  #   }
-  # }
-  dependabot_copy_secrets = true
+  mode = "organization"
+  name = var.name
+
   settings = {
-    variables = {
-      MYVAR = "MYPROJECTVAL"
+    billing_email                   = var.billing_email
+    description                     = "My GitHub Organization"
+    default_repository_permission   = "read"
+    members_can_create_repositories = false
+  }
+
+  repositories = {
+    # Using preset: secure-service (automatically configures security features)
+    "my-api" = {
+      preset      = "secure-service"
+      description = "Backend API service"
+    }
+
+    # Using preset: public-library (perfect for open source projects)
+    "my-library" = {
+      preset      = "public-library"
+      description = "Reusable component library"
+    }
+
+    # Using preset: documentation (optimized for GitHub Pages)
+    "docs-site" = {
+      preset      = "documentation"
+      description = "Documentation website"
+    }
+
+    # Manual configuration (no preset)
+    "legacy-app" = {
+      description = "Legacy application"
+      visibility  = "private"
+      has_issues  = true
+      has_wiki    = false
     }
   }
-  repositories = {
-    "repo-1" = {
-      description = "First repository"
-      visibility  = "private"
+
+  runner_groups = {
+    "default-runners" = {
+      visibility                = "all"
+      allow_public_repositories = false
     }
-    "repo-2" = {
-      description = "Second repository"
-      visibility  = "public"
-    }
+  }
+
+  variables = {
+    "ENVIRONMENT" = "production"
   }
 }

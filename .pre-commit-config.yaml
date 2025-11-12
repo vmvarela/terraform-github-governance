@@ -12,6 +12,9 @@ repos:
     rev: v1.103.0
     hooks:
       - id: terraform_fmt
+      - id: terraform_docs
+        args:
+          - '--args=--config=.terraform-docs.yml'
       - id: terraform_tflint
         args:
           - '--args=--only=terraform_deprecated_interpolation'
@@ -40,8 +43,8 @@ repos:
     hooks:
       - id: terraform-test
         name: Terraform Test
-        entry: bash -c 'terraform test'
+        entry: terraform test
         language: system
         pass_filenames: false
         files: \.tf$
-        verbose: true
+        verbose: false

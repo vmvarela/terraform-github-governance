@@ -1,0 +1,18 @@
+# Organization Configuration
+name          = "your-org"
+billing_email = "billing@example.com"
+
+# GitHub Authentication
+github_token = "ghp_your_token_here"
+
+# Organization Plan (determines available features)
+# Options: "free", "team", "business", "enterprise"
+github_plan = "free"
+
+# Encrypted Secrets (optional)
+# Use GitHub CLI to encrypt secrets:
+# gh secret set SECRET_NAME --body "secret-value" --org your-org
+# Then get the encrypted value and paste here
+
+# deploy_token_encrypted = ""
+# npm_token_encrypted    = ""
