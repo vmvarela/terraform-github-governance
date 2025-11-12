@@ -28,6 +28,7 @@
 **Este módulo ahora califica como "Premium Reference Module"** según los estándares de HashiCorp.
 
 **Logros Destacados:**
+
 - ✅ Integración exitosa del submódulo `repository` sin duplicación
 - ✅ Eliminación de dependencias complejas (Kubernetes/Helm)
 - ✅ 99 tests pasando (94% cobertura efectiva)
@@ -42,6 +43,7 @@
 ### 1️⃣ Integración del Módulo Repository
 
 **ANTES (Arquitectura con Submódulo):**
+
 ```terraform
 # Llamada al submódulo
 module "repo" {
@@ -57,6 +59,7 @@ output "repositories" {
 ```
 
 **AHORA (Arquitectura Integrada):**
+
 ```terraform
 # Recursos directos en repository.tf
 resource "github_repository" "repo" {
@@ -77,6 +80,7 @@ output "repositories" {
 ```
 
 **Beneficios Obtenidos:**
+
 1. **🎯 Simplicidad:** -1 nivel de indirección = -30% complejidad cognitiva
 2. **⚡ Performance:** Evaluación directa sin módulo wrapper
 3. **🔍 Debugging:** Stack traces más claros
@@ -84,6 +88,7 @@ output "repositories" {
 5. **🛡️ Protección:** Lifecycle rules aplicados directamente
 
 **Métrica de Éxito:**
+
 - Reducción de líneas de módulo: **-40%** (de ~150 líneas de invocación a recursos directos)
 - Tiempo de plan: **-15%** estimado (menos evaluación de módulos)
 - Complejidad ciclomática: **-25%** (medida con terraform-compliance)
@@ -95,6 +100,7 @@ output "repositories" {
 **Decisión Arquitectónica:** Eliminar `modules/actions-runner-scale-set`
 
 **Justificación:**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  PROBLEMA: Acoplamiento con Infraestructura Externa    │
@@ -115,6 +121,7 @@ output "repositories" {
 ```
 
 **Impacto Positivo:**
+
 - ❌ Eliminados providers: `kubernetes`, `helm`
 - ✅ Reducción de dependencias: **-2 providers críticos**
 - ✅ Módulo ahora "GitHub-only" = más cohesivo
@@ -122,6 +129,7 @@ output "repositories" {
 - ✅ Documentación: -40% de complejidad en README
 
 **Trade-off Aceptado:**
+
 - ⚠️ Los usuarios deben gestionar scale sets por separado
 - ✅ PERO: Módulo ahora tiene responsabilidad única bien definida
 - ✅ MEJOR: Principio de "Do One Thing Well" (Unix Philosophy)
@@ -133,6 +141,7 @@ output "repositories" {
 ### 3️⃣ Locals: De Complejidad a Claridad
 
 **ANTES (Código Problemático):**
+
 ```terraform
 # 🔴 ANTI-PATTERN: "Big Ball of Mud" local
 repositories = { for repo, data in var.repositories :
@@ -159,12 +168,14 @@ repositories = { for repo, data in var.repositories :
 ```
 
 **Problemas Identificados:**
+
 1. **Complejidad Ciclomática:** 45 (límite recomendado: 10)
 2. **Anidamiento:** 7 niveles (límite: 3)
 3. **Líneas:** 22 líneas en 1 expresión
 4. **Mantenibilidad:** Imposible de debuggear sin formatter
 
 **AHORA (Código Refactorizado):**
+
 ```terraform
 # ✅ BEST PRACTICE: "Divide and Conquer" approach
 
@@ -218,6 +229,7 @@ repositories = { for repo, data in var.repositories :
 ```
 
 **Mejoras Medibles:**
+
 | Métrica | Antes | Ahora | Mejora |
 |---------|-------|-------|--------|
 | Complejidad Ciclomática | 45 | 8 | **-82%** ✅ |
@@ -227,7 +239,8 @@ repositories = { for repo, data in var.repositories :
 | Testabilidad | ❌ | ✅ | +100% ✅ |
 
 **Comentarios del Experto:**
-> "La refactorización de locals es un ejemplo de libro de texto de cómo aplicar principios SOLID en Terraform. La separación en pasos (_repos_base_config, _repos_merge_config, _repos_union_config) permite:
+> "La refactorización de locals es un ejemplo de libro de texto de cómo aplicar principios SOLID en Terraform. La separación en pasos (_repos_base_config,_repos_merge_config, _repos_union_config) permite:
+>
 > 1. Testing individual de cada transformación
 > 2. Debugging con `terraform console`
 > 3. Comprensión incremental del flujo
@@ -242,6 +255,7 @@ repositories = { for repo, data in var.repositories :
 ### 4️⃣ Cobertura y Calidad de Tests
 
 **Métricas Actualizadas:**
+
 ```
 ╔════════════════════════════════════════════════════════╗
 ║  TESTING DASHBOARD                                     ║
@@ -259,6 +273,7 @@ repositories = { for repo, data in var.repositories :
 ```
 
 **Distribución de Tests:**
+
 ```
 tests/
 ├── environments.tftest.hcl    → 10 tests ✅ (environment mgmt)
@@ -274,6 +289,7 @@ tests/
 **Análisis de Calidad:**
 
 1. **Test Naming Convention** ✅
+
    ```hcl
    run "basic_repository_creation" { ... }           # ✅ Descriptivo
    run "private_repository_with_security" { ... }    # ✅ Contexto claro
@@ -281,6 +297,7 @@ tests/
    ```
 
 2. **Test Structure** ✅
+
    ```hcl
    run "test_name" {
      command = plan  # ✅ Usa plan (fast), no apply (slow)
@@ -300,6 +317,7 @@ tests/
    ```
 
 3. **Mock Provider Strategy** ✅
+
    ```hcl
    mock_provider "github" {}  # ✅ Mock sin configuración real
    mock_provider "tls" {}     # ✅ Para deploy keys generados
@@ -314,6 +332,7 @@ tests/
    ```
 
 4. **Edge Cases Cubiertos** ✅
+
    ```
    ✅ Repository con todas las features activadas
    ✅ Repository archived
@@ -329,6 +348,7 @@ tests/
    ```
 
 **Gaps Identificados (2 recursos sin tests dedicados):**
+
 ```
 ⚠️ github_repository_dependabot_security_updates
 ⚠️ github_repository_collaborators
@@ -407,6 +427,7 @@ resource "github_organization_webhook" "this" {
 **Score Total de Seguridad: 9.8/10** 🔒
 
 **Recomendación Adicional:**
+
 ```terraform
 # OPCIONAL: Protección para organization settings
 resource "github_organization_settings" "this" {
@@ -431,6 +452,7 @@ resource "github_organization_settings" "this" {
 ### 6️⃣ API del Módulo (Variables)
 
 **Estructura Actual:**
+
 ```
 variables.tf (31KB, 21 variables)
 ├── Core (5 variables)
@@ -466,6 +488,7 @@ variables.tf (31KB, 21 variables)
 **Evaluación de Calidad:**
 
 1. **Type Safety** ⭐⭐⭐⭐⭐
+
    ```terraform
    # ✅ EXCELENTE: Types explícitos con optional()
    variable "repositories" {
@@ -487,6 +510,7 @@ variables.tf (31KB, 21 variables)
    ```
 
 2. **Validation Coverage** ⭐⭐⭐⭐⭐
+
    ```terraform
    # ✅ 12 validaciones custom
 
@@ -516,6 +540,7 @@ variables.tf (31KB, 21 variables)
    ```
 
 3. **Documentation Quality** ⭐⭐⭐⭐
+
    ```terraform
    variable "repositories" {
      description = <<-EOT
@@ -543,6 +568,7 @@ variables.tf (31KB, 21 variables)
    ```
 
    **Sugerencia de Mejora:**
+
    ```terraform
    # Agregar ejemplos inline más completos
    # Ver recomendación en sección anterior del análisis
@@ -578,6 +604,7 @@ outputs.tf (6.7KB)
 **Análisis de Outputs:**
 
 1. **Raw Outputs** ⭐⭐⭐⭐⭐
+
    ```terraform
    # ✅ EXCELENTE: Direct access a recursos
    output "repositories" {
@@ -602,6 +629,7 @@ outputs.tf (6.7KB)
    ```
 
 2. **Summary Outputs** ⭐⭐⭐⭐⭐ (NUEVO - Excelente adición)
+
    ```terraform
    # ✅ INNOVADOR: Métricas agregadas
    output "repositories_summary" {
@@ -709,12 +737,14 @@ output "features_available" {
 ```
 
 **Por qué es innovador:**
+
 - 🔍 **Auto-discovery:** Detecta plan automáticamente via API
 - 🛡️ **Fail-fast:** Error ANTES de apply (ahorra tiempo y dinero)
 - 📚 **Educational:** Mensajes incluyen soluciones y links
 - 🎯 **Precise:** Valida features específicas, no todo-o-nada
 
 **Comparación con otros módulos:**
+
 ```
 ❌ Módulos típicos: Fallan en apply con error críptico de API
 ✅ Este módulo: Falla en plan con contexto y soluciones
@@ -810,6 +840,7 @@ module "team_project" {
 ```
 
 **Beneficios del Pattern:**
+
 1. **Multi-team scaling:** Cada equipo puede tener su módulo de project
 2. **Naming isolation:** Spec prefix evita colisiones
 3. **Scoped permissions:** Runner groups auto-scoped a project repos
@@ -895,6 +926,7 @@ module "github" {
 ```
 
 **Por qué es poderoso:**
+
 - 📦 **DRY:** Define una vez, reutiliza en N repos
 - 🎯 **Override granular:** Repos pueden personalizar lo necesario
 - 🔒 **Enforce policies:** Settings puede forzar valores (con validation)
@@ -990,32 +1022,38 @@ Este módulo ha evolucionado de **"Muy Bueno"** (8.2/10) a **"Premium Reference"
 **Este módulo ahora cumple con los criterios de "Verified Module":**
 
 ✅ **Provider Integration** (Nivel 5/5)
+
 - Soporte completo del provider GitHub 6.0
 - Uso de todas las capacidades avanzadas (rulesets, environments, custom properties)
 
 ✅ **Code Quality** (Nivel 5/5)
+
 - Terraform >= 1.6 con features modernas (optional(), checks)
 - Locals refactorizados con complejidad < 10
 - Type safety al 100%
 
 ✅ **Testing** (Nivel 5/5)
+
 - 99 tests con 100% pass rate
 - Coverage del 94% de recursos
 - Mock providers bien implementados
 
 ✅ **Documentation** (Nivel 4/5)
+
 - README comprehensivo
 - Variables bien documentadas
 - Examples funcionales
 - ⚠️ Falta: ADRs y advanced examples
 
 ✅ **Security** (Nivel 5/5)
+
 - Lifecycle rules en recursos críticos
 - Validaciones exhaustivas
 - Secrets management correcto
 - Plan-aware validation único
 
 ✅ **Maintenance** (Nivel 5/5)
+
 - Estructura modular clara
 - Código auto-documentado
 - Fácil de extender
@@ -1059,6 +1097,7 @@ HashiCorp Community Reviewer
 ---
 
 **Changelog desde v1.0:**
+
 - Integración de submódulo repository → Reducción de complejidad
 - Eliminación de scale-sets → Eliminación de dependencias K8s/Helm
 - Refactorización de locals → +200% legibilidad

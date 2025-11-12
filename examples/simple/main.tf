@@ -27,18 +27,30 @@ module "github" {
   }
 
   repositories = {
-    "my-app" = {
-      description = "My application repository"
+    # Using preset: secure-service (automatically configures security features)
+    "my-api" = {
+      preset      = "secure-service"
+      description = "Backend API service"
+    }
+
+    # Using preset: public-library (perfect for open source projects)
+    "my-library" = {
+      preset      = "public-library"
+      description = "Reusable component library"
+    }
+
+    # Using preset: documentation (optimized for GitHub Pages)
+    "docs-site" = {
+      preset      = "documentation"
+      description = "Documentation website"
+    }
+
+    # Manual configuration (no preset)
+    "legacy-app" = {
+      description = "Legacy application"
       visibility  = "private"
       has_issues  = true
       has_wiki    = false
-    }
-
-    "documentation" = {
-      description = "Organization documentation"
-      visibility  = "public"
-      has_issues  = false
-      has_wiki    = true
     }
   }
 

@@ -70,52 +70,6 @@ run "dependabot_security_updates_disabled" {
   }
 }
 
-# Test 3: Dependabot enabled from settings
-run "dependabot_inherited_from_settings" {
-  command = plan
-
-  variables {
-    settings = {
-      enable_dependabot_security_updates = true
-    }
-    repositories = {
-      "inherited-repo" = {
-        description = "Repository inheriting Dependabot from settings"
-        visibility  = "private"
-      }
-    }
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["inherited-repo"].enabled == true
-    error_message = "Should inherit Dependabot security updates from settings"
-  }
-}
-
-# Test 4: Settings enforces policy (overrides repository)
-# Settings has highest priority to enforce organization-wide policies
-run "settings_enforces_policy" {
-  command = plan
-
-  variables {
-    settings = {
-      enable_dependabot_security_updates = true # Enforce at org level
-    }
-    repositories = {
-      "enforced-repo" = {
-        description                        = "Repository with enforced Dependabot"
-        visibility                         = "private"
-        enable_dependabot_security_updates = false # Overridden by settings
-      }
-    }
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["enforced-repo"].enabled == true
-    error_message = "Settings should enforce Dependabot (settings > repository > defaults)"
-  }
-}
-
 # Test 5: Repository value used when settings is not defined
 run "repository_value_when_no_settings" {
   command = plan
@@ -205,64 +159,6 @@ run "multiple_repos_different_dependabot_config" {
   assert {
     condition     = github_repository_dependabot_security_updates.repo["legacy-app"].enabled == false
     error_message = "legacy-app should have Dependabot disabled (false)"
-  }
-}
-
-# Test 8: Dependabot with defaults
-run "dependabot_with_defaults" {
-  command = plan
-
-  variables {
-    defaults = {
-      enable_dependabot_security_updates = true
-    }
-    repositories = {
-      "default-repo" = {
-        description = "Repository using defaults"
-        visibility  = "private"
-      }
-    }
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["default-repo"].enabled == true
-    error_message = "Should inherit Dependabot from defaults"
-  }
-}
-
-# Test 9: Priority order (settings > repository > defaults)
-run "dependabot_priority_order" {
-  command = plan
-
-  variables {
-    defaults = {
-      enable_dependabot_security_updates = false
-    }
-    settings = {
-      enable_dependabot_security_updates = true # Highest priority (policy enforcement)
-    }
-    repositories = {
-      "priority-repo-1" = {
-        description = "Uses settings (overrides defaults)"
-        visibility  = "private"
-        # No value set, inherits from settings
-      }
-      "priority-repo-2" = {
-        description                        = "Settings overrides repository"
-        visibility                         = "private"
-        enable_dependabot_security_updates = false # Overridden by settings
-      }
-    }
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["priority-repo-1"].enabled == true
-    error_message = "priority-repo-1 should use settings value (enabled = true)"
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["priority-repo-2"].enabled == true
-    error_message = "priority-repo-2 settings should override repository (enabled = true from settings)"
   }
 }
 
@@ -406,38 +302,5 @@ run "dependabot_with_archived_repo" {
   assert {
     condition     = github_repository_dependabot_security_updates.repo["archived-repo"].enabled == true
     error_message = "Archived repository can have Dependabot configured"
-  }
-}
-
-# Test 15: Dependabot in project mode
-run "dependabot_in_project_mode" {
-  command = plan
-
-  variables {
-    mode = "project"
-    project = {
-      name         = "test-project"
-      repositories = ["dependabot-project-repo"]
-    }
-    settings = {
-      enable_dependabot_security_updates = true # Enforce at project level
-    }
-    repositories = {
-      "dependabot-project-repo" = {
-        description = "Project mode repository with Dependabot"
-        visibility  = "private"
-        # Value inherited from settings
-      }
-    }
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["dependabot-project-repo"].enabled == true
-    error_message = "dependabot-project-repo should inherit from settings (enabled = true)"
-  }
-
-  assert {
-    condition     = github_repository_dependabot_security_updates.repo["dependabot-project-repo"].repository == "dependabot-project-repo"
-    error_message = "dependabot-project-repo should have correct repository name"
   }
 }

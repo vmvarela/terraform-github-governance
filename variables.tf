@@ -2,6 +2,316 @@
 # Core Configuration
 # ================================================
 
+# ================================================
+# Repository Presets
+# ================================================
+
+variable "repository_presets" {
+  description = <<-EOT
+    Predefined repository configurations for common use cases.
+
+    Using presets reduces configuration from 20+ lines to just 3 lines per repository.
+    Presets include sensible defaults for security, merge settings, and branch protection.
+
+    Available presets:
+
+    - **secure-service**: Backend services, microservices, APIs
+      - Private visibility
+      - Branch protection (1 approval required)
+      - Secret scanning + push protection
+      - Dependabot security updates
+      - Squash merge only
+      - Delete branch on merge
+
+    - **public-library**: Open source libraries, npm/pip packages
+      - Public visibility
+      - Issues + Discussions + Wiki enabled
+      - All merge strategies allowed
+      - Community issue labels
+      - GitHub Pages ready
+
+    - **documentation**: Documentation sites, knowledge bases
+      - Public visibility
+      - GitHub Pages configured
+      - Discussions enabled
+      - Squash merge only
+
+    - **infrastructure**: Infrastructure as Code (Terraform, CloudFormation)
+      - Private visibility
+      - Strict branch protection (2 approvals)
+      - Required signatures
+      - Code owner review required
+      - Last push approval required
+
+    You can also define custom presets by adding them to this variable.
+
+    Example:
+      repository_presets = {
+        "my-custom-preset" = {
+          description = "My custom configuration"
+          visibility  = "private"
+          has_issues  = true
+          # ... any repository attributes
+        }
+      }
+  EOT
+  type = map(object({
+    # Basic settings
+    description                            = optional(string)
+    homepage                               = optional(string)
+    visibility                             = optional(string)
+    has_issues                             = optional(bool)
+    has_projects                           = optional(bool)
+    has_wiki                               = optional(bool)
+    has_downloads                          = optional(bool)
+    has_discussions                        = optional(bool)
+    allow_merge_commit                     = optional(bool)
+    allow_squash_merge                     = optional(bool)
+    allow_rebase_merge                     = optional(bool)
+    allow_auto_merge                       = optional(bool)
+    allow_update_branch                    = optional(bool)
+    delete_branch_on_merge                 = optional(bool)
+    enable_vulnerability_alerts            = optional(bool)
+    enable_dependency_graph                = optional(bool)
+    enable_advanced_security               = optional(bool)
+    enable_secret_scanning                 = optional(bool)
+    enable_secret_scanning_push_protection = optional(bool)
+    enable_dependabot_security_updates     = optional(bool)
+    enable_actions                         = optional(bool)
+    archived                               = optional(bool)
+    archive_on_destroy                     = optional(bool)
+    is_template                            = optional(bool)
+    template                               = optional(string)
+    template_include_all_branches          = optional(bool)
+    gitignore_template                     = optional(string)
+    license_template                       = optional(string)
+    default_branch                         = optional(string)
+    auto_init                              = optional(bool)
+    topics                                 = optional(list(string))
+    actions_access_level                   = optional(string)
+    actions_allowed_policy                 = optional(string)
+    actions_allowed_github                 = optional(bool)
+    actions_allowed_verified               = optional(bool)
+    actions_allowed_patterns               = optional(set(string))
+    workflow_permissions = optional(object({
+      default_workflow_permissions = optional(string, "read")
+      can_approve_pull_requests    = optional(bool, false)
+    }))
+    merge_commit_title          = optional(string)
+    merge_commit_message        = optional(string)
+    squash_merge_commit_title   = optional(string)
+    squash_merge_commit_message = optional(string)
+    web_commit_signoff_required = optional(bool)
+    pages_source_branch         = optional(string)
+    pages_source_path           = optional(string)
+    pages_build_type            = optional(string)
+    pages_cname                 = optional(string)
+
+    # Advanced configurations
+    issue_labels        = optional(map(string))
+    issue_labels_colors = optional(map(string))
+    rulesets = optional(map(object({
+      enforcement = optional(string, "active")
+      target      = optional(string, "branch")
+      conditions = optional(object({
+        ref_name = object({
+          include = list(string)
+          exclude = list(string)
+        })
+      }))
+      bypass_actors = optional(object({
+        repository_roles = optional(list(object({
+          repository_role_id = string
+          bypass_mode        = optional(string, "always")
+        })), [])
+        teams = optional(list(object({
+          team_id     = number
+          bypass_mode = optional(string, "always")
+        })), [])
+        integrations = optional(list(object({
+          installation_id = number
+          bypass_mode     = optional(string, "always")
+        })), [])
+      }), {})
+      rules = optional(object({
+        creation                = optional(bool)
+        update                  = optional(bool)
+        deletion                = optional(bool)
+        required_linear_history = optional(bool)
+        required_signatures     = optional(bool)
+        pull_request = optional(object({
+          required_approving_review_count   = optional(number)
+          dismiss_stale_reviews_on_push     = optional(bool)
+          require_code_owner_review         = optional(bool)
+          require_last_push_approval        = optional(bool)
+          required_review_thread_resolution = optional(bool)
+        }))
+        required_status_checks = optional(object({
+          strict_required_status_checks_policy = optional(bool)
+          required_status_checks = list(object({
+            context        = string
+            integration_id = optional(number)
+          }))
+        }))
+        non_fast_forward = optional(bool)
+      }), {})
+    })), {})
+  }))
+  default = {
+    # ══════════════════════════════════════════════════════════════
+    # Preset: secure-service
+    # Perfect for: Backend services, microservices, APIs
+    # ══════════════════════════════════════════════════════════════
+    "secure-service" = {
+      visibility                             = "private"
+      has_issues                             = true
+      has_projects                           = false
+      has_wiki                               = false
+      has_discussions                        = false
+      allow_merge_commit                     = false
+      allow_squash_merge                     = true
+      allow_rebase_merge                     = false
+      delete_branch_on_merge                 = true
+      enable_vulnerability_alerts            = true
+      enable_dependency_graph                = true
+      enable_dependabot_security_updates     = true
+      enable_secret_scanning                 = true
+      enable_secret_scanning_push_protection = true
+      enable_actions                         = true
+      auto_init                              = true
+
+      rulesets = {
+        "protect-main" = {
+          enforcement = "active"
+          target      = "branch"
+          conditions = {
+            ref_name = {
+              include = ["~DEFAULT_BRANCH"]
+              exclude = []
+            }
+          }
+          rules = {
+            deletion         = true
+            non_fast_forward = true
+            pull_request = {
+              required_approving_review_count = 1
+              dismiss_stale_reviews_on_push   = true
+            }
+          }
+        }
+      }
+    }
+
+    # ══════════════════════════════════════════════════════════════
+    # Preset: public-library
+    # Perfect for: Open source libraries, npm/pip packages
+    # ══════════════════════════════════════════════════════════════
+    "public-library" = {
+      visibility                         = "public"
+      has_issues                         = true
+      has_projects                       = true
+      has_wiki                           = true
+      has_discussions                    = true
+      allow_merge_commit                 = true
+      allow_squash_merge                 = true
+      allow_rebase_merge                 = true
+      delete_branch_on_merge             = false
+      enable_vulnerability_alerts        = true
+      enable_dependency_graph            = true
+      enable_dependabot_security_updates = true
+      enable_actions                     = true
+      auto_init                          = true
+
+      issue_labels = {
+        "bug"              = "Something isn't working"
+        "enhancement"      = "New feature or request"
+        "documentation"    = "Improvements or additions to documentation"
+        "good-first-issue" = "Good for newcomers"
+        "help-wanted"      = "Extra attention is needed"
+      }
+
+      issue_labels_colors = {
+        "bug"              = "d73a4a"
+        "enhancement"      = "a2eeef"
+        "documentation"    = "0075ca"
+        "good-first-issue" = "7057ff"
+        "help-wanted"      = "008672"
+      }
+    }
+
+    # ══════════════════════════════════════════════════════════════
+    # Preset: documentation
+    # Perfect for: Documentation sites, knowledge bases
+    # ══════════════════════════════════════════════════════════════
+    "documentation" = {
+      visibility             = "public"
+      has_issues             = true
+      has_projects           = false
+      has_wiki               = false
+      has_discussions        = true
+      allow_merge_commit     = false
+      allow_squash_merge     = true
+      allow_rebase_merge     = false
+      delete_branch_on_merge = true
+      enable_actions         = true
+      auto_init              = true
+
+      pages_build_type    = "workflow"
+      pages_source_branch = "main"
+      pages_source_path   = "/"
+    }
+
+    # ══════════════════════════════════════════════════════════════
+    # Preset: infrastructure
+    # Perfect for: Terraform modules, CloudFormation, Ansible
+    # ══════════════════════════════════════════════════════════════
+    "infrastructure" = {
+      visibility                             = "private"
+      has_issues                             = true
+      has_projects                           = false
+      has_wiki                               = false
+      has_discussions                        = false
+      allow_merge_commit                     = false
+      allow_squash_merge                     = true
+      allow_rebase_merge                     = false
+      delete_branch_on_merge                 = true
+      enable_vulnerability_alerts            = true
+      enable_dependency_graph                = true
+      enable_dependabot_security_updates     = true
+      enable_secret_scanning                 = true
+      enable_secret_scanning_push_protection = true
+      enable_actions                         = true
+      auto_init                              = true
+
+      rulesets = {
+        "protect-production" = {
+          enforcement = "active"
+          target      = "branch"
+          conditions = {
+            ref_name = {
+              include = ["~DEFAULT_BRANCH"]
+              exclude = []
+            }
+          }
+          rules = {
+            deletion                = true
+            non_fast_forward        = true
+            required_signatures     = true
+            required_linear_history = true
+            pull_request = {
+              required_approving_review_count   = 2
+              dismiss_stale_reviews_on_push     = true
+              require_code_owner_review         = true
+              require_last_push_approval        = true
+              required_review_thread_resolution = true
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 variable "mode" {
   description = <<-EOT
     Governance mode: 'project' or 'organization'.
@@ -262,22 +572,53 @@ variable "repositories" {
     Map of repository names to their configuration objects. Each repository
     can customize settings like visibility, features, security, and more.
 
-    Example:
+    NEW: Supports presets for simplified configuration!
+
+    Use the 'preset' attribute to apply predefined configurations:
+    - secure-service: Backend services, APIs (private, protected, secure)
+    - public-library: Open source libraries (public, community-friendly)
+    - documentation: Documentation sites (public, GitHub Pages ready)
+    - infrastructure: IaC repositories (private, strict protection)
+
+    Example with preset (simplified):
       repositories = {
         "backend-api" = {
           description = "Backend API service"
+          preset      = "secure-service"  # 20+ lines of config in 1 line!
+        }
+      }
+
+    Example with preset override:
+      repositories = {
+        "critical-service" = {
+          description = "Critical service"
+          preset      = "secure-service"
+
+          # Override specific settings from preset
+          rulesets = {
+            "protect-main" = {
+              rules = {
+                pull_request = {
+                  required_approving_review_count = 3  # Override: need 3 approvals
+                }
+              }
+            }
+          }
+        }
+      }
+
+    Example without preset (manual configuration):
+      repositories = {
+        "legacy-app" = {
+          description = "Legacy application"
           visibility  = "private"
           has_issues  = true
-          topics      = ["api", "backend"]
-        }
-        "frontend-app" = {
-          description = "Frontend application"
-          visibility  = "public"
-          has_discussions = true
+          # ... full manual configuration
         }
       }
   EOT
   type = map(object({
+    preset                                 = optional(string) # NEW: Preset name from repository_presets
     alias                                  = optional(string)
     description                            = optional(string)
     homepage                               = optional(string)
@@ -441,6 +782,20 @@ variable "repositories" {
     custom_properties_types = optional(map(string))
   }))
   default = {}
+
+  validation {
+    condition = alltrue([
+      for name, repo in var.repositories :
+      try(repo.preset == null || contains(keys(var.repository_presets), repo.preset), true)
+    ])
+    error_message = <<-EOT
+      Invalid preset specified in repositories.
+
+      Available presets: ${join(", ", keys(var.repository_presets))}
+
+      You can also define custom presets in the 'repository_presets' variable.
+    EOT
+  }
 
   validation {
     condition = alltrue([

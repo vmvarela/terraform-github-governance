@@ -30,14 +30,14 @@ resource "github_organization_settings" "this" {
   members_can_create_public_pages                              = try(var.settings.members_can_create_public_pages, null)
   members_can_create_private_pages                             = try(var.settings.members_can_create_private_pages, null)
   members_can_fork_private_repositories                        = try(var.settings.members_can_fork_private_repositories, null)
-  has_repository_projects                                      = try(coalesce(local.settings.has_projects, local.defaults.has_projects), null)
-  advanced_security_enabled_for_new_repositories               = try(coalesce(local.settings.enable_advanced_security, local.defaults.enable_advanced_security), null)
-  dependabot_security_updates_enabled_for_new_repositories     = try(coalesce(local.settings.enable_dependabot_security_updates, local.defaults.enable_dependabot_security_updates), null)
-  secret_scanning_enabled_for_new_repositories                 = try(coalesce(local.settings.enable_secret_scanning, local.defaults.enable_secret_scanning), null)
-  secret_scanning_push_protection_enabled_for_new_repositories = try(coalesce(local.settings.enable_secret_scanning_push_protection, local.defaults.enable_secret_scanning_push_protection), null)
-  dependabot_alerts_enabled_for_new_repositories               = try(coalesce(local.settings.enable_vulnerability_alerts, local.defaults.enable_vulnerability_alerts), null)
-  dependency_graph_enabled_for_new_repositories                = try(coalesce(local.settings.enable_dependency_graph, local.defaults.enable_dependency_graph), null)
-  web_commit_signoff_required                                  = try(coalesce(local.settings.web_commit_signoff_required, local.defaults.web_commit_signoff_required), null)
+  has_repository_projects                                      = try(local.settings.has_projects, null)
+  advanced_security_enabled_for_new_repositories               = try(local.settings.enable_advanced_security, null)
+  dependabot_security_updates_enabled_for_new_repositories     = try(local.settings.enable_dependabot_security_updates, null)
+  secret_scanning_enabled_for_new_repositories                 = try(local.settings.enable_secret_scanning, null)
+  secret_scanning_push_protection_enabled_for_new_repositories = try(local.settings.enable_secret_scanning_push_protection, null)
+  dependabot_alerts_enabled_for_new_repositories               = try(local.settings.enable_vulnerability_alerts, null)
+  dependency_graph_enabled_for_new_repositories                = try(local.settings.enable_dependency_graph, null)
+  web_commit_signoff_required                                  = try(local.settings.web_commit_signoff_required, null)
 
   lifecycle {
     # PROTECTION: Critical organization settings should not be destroyed without review

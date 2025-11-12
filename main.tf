@@ -1,191 +1,40 @@
 locals {
 
-  # empty settings is a map with all possible keys set to null
-  empty_settings = {
-    for key in concat(local.coalesce_keys, local.merge_keys, local.union_keys) : key => null
-  }
-
-  # you can set var.users and var.teams or var.settings.users and var.settings.teams
-  settings = merge(local.empty_settings, var.settings, {
+  # ========================================================================
+  # SETTINGS - Global configuration that can be referenced
+  # ========================================================================
+  # Merge var.settings with standalone var.users and var.teams for backwards compatibility
+  settings = merge(var.settings, {
     "users" = merge(var.users, try(var.settings.users, {}))
     "teams" = merge(var.teams, try(var.settings.teams, {}))
   })
-
-  defaults = merge(local.empty_settings, var.defaults)
-
-  # keys to set if empty: (1) settings, (2) repository, (3) defaults
-  coalesce_keys = [
-    "actions_access_level",
-    "actions_allowed_github",
-    "actions_allowed_patterns",
-    "actions_allowed_policy",
-    "actions_allowed_verified",
-    "workflow_permissions",
-    "allow_auto_merge",
-    "allow_merge_commit",
-    "allow_rebase_merge",
-    "allow_squash_merge",
-    "allow_update_branch",
-    "archive_on_destroy",
-    "archived",
-    "auto_init",
-    "default_branch",
-    "delete_branch_on_merge",
-    "dependabot_copy_secrets",
-    "deploy_keys_path",
-    "enable_actions",
-    "enable_advanced_security",
-    "enable_dependency_graph",
-    "enable_dependabot_security_updates",
-    "enable_secret_scanning",
-    "enable_secret_scanning_push_protection",
-    "enable_vulnerability_alerts",
-    "gitignore_template",
-    "has_downloads",
-    "has_issues",
-    "has_projects",
-    "has_wiki",
-    "homepage",
-    "is_template",
-    "license_template",
-    "merge_commit_message",
-    "merge_commit_title",
-    "pages_build_type",
-    "pages_cname",
-    "pages_source_branch",
-    "pages_source_path",
-    "private",
-    "squash_merge_commit_message",
-    "squash_merge_commit_title",
-    "template",
-    "template_include_all_branches",
-    "visibility",
-    "web_commit_signoff_required"
-  ]
-
-  # keys to merge (settings + repository), defaults if empty
-  merge_keys = [
-    "autolink_references",
-    "branches",
-    "custom_properties",
-    "custom_properties_types",
-    "dependabot_secrets",
-    "dependabot_secrets_encrypted",
-    "deploy_keys",
-    "environments",
-    "issue_labels",
-    "issue_labels_colors",
-    "rulesets",
-    "secrets",
-    "secrets_encrypted",
-    "teams",
-    "users",
-    "variables",
-    "webhooks"
-  ]
-
-  # keys to add (settings + repository), defaults if empty
-  union_keys = [
-    "files",
-    "topics"
-  ]
 
   # format spec for repository name
   spec = var.mode == "organization" ? "%s" : (var.spec != null ? replace(var.spec, "/[^a-zA-Z0-9-%]/", "") : "%s")
 
   # ========================================================================
-  # REPOSITORY CONFIGURATION MERGE LOGIC (Refactored for readability)
+  # PRESET EXPANSION - SIMPLIFIED
   # ========================================================================
+  # Apply preset defaults, then override with repository-specific config
+  # Priority: preset (base) -> repository config (override)
 
-  # Step 1: Build base configuration per repository from coalesce_keys
-  # Priority: settings > repository > defaults (policy enforcement)
-  repos_base_config = { for repo, data in var.repositories :
-    repo => {
-      for k in local.coalesce_keys :
-      k => try(
-        coalesce(
-          lookup(local.settings, k, null),
-          lookup(data, k, null),
-          lookup(var.defaults, k, null)
-        ),
-        null
-      )
-    }
-  }
-
-  # Step 2: Build merge configuration per repository from merge_keys
-  # Priority: settings > repository > defaults (settings wins on key conflicts)
-  repos_merge_config = { for repo, data in var.repositories :
-    repo => {
-      for k in local.merge_keys :
-      k => (
-        length(merge(
-          try(data[k], null) != null ? (can(data[k]) ? try(data[k], {}) : {}) : {},
-          try(local.settings[k], null) != null ? (can(local.settings[k]) ? try(local.settings[k], {}) : {}) : {}
-        )) > 0
-        ? merge(
-          try(data[k], null) != null ? (can(data[k]) ? try(data[k], {}) : {}) : {},
-          try(local.settings[k], null) != null ? (can(local.settings[k]) ? try(local.settings[k], {}) : {}) : {}
-        )
-        : try(var.defaults[k], {})
-      )
-    }
-  }
-
-  # Step 3: Build union configuration per repository from union_keys
-  # Combines: repository + settings (union of both sets/lists)
-  # For 'files': uses concat (list of objects)
-  # For 'topics': uses setunion (set of strings)
-  repos_union_config = { for repo, data in var.repositories :
-    repo => {
-      for k in local.union_keys :
-      k => (
-        k == "files" ? (
-          length(concat(
-            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
-            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
-          )) > 0
-          ? concat(
-            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
-            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
-          )
-          : try(var.defaults[k], null) != null && can(tolist(var.defaults[k])) ? tolist(var.defaults[k]) : []
-          ) : tolist(
-          length(setunion(
-            [],
-            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
-            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
-          )) > 0
-          ? setunion(
-            try(data[k], null) != null && can(tolist(data[k])) ? tolist(data[k]) : [],
-            try(local.settings[k], null) != null && can(tolist(local.settings[k])) ? tolist(local.settings[k]) : []
-          )
-          : try(var.defaults[k], null) != null && can(tolist(var.defaults[k])) ? tolist(var.defaults[k]) : []
-        )
-      )
-    }
-  }
-
-  # Step 4: Final assembly - Combine all configurations
-  # Use repository alias if provided, otherwise use key
-  repositories = { for repo, data in var.repositories :
-    repo => merge(
-      # Description (separate as it's always repository-specific)
-      { alias = try(data.alias, null), description = try(data.description, null) },
-
-      # Base configuration (coalesced)
-      local.repos_base_config[repo],
-
-      # Merge configuration (merged maps)
-      local.repos_merge_config[repo],
-
-      # Union configuration (union of lists)
-      local.repos_union_config[repo]
+  repositories = {
+    for repo_key, repo_config in var.repositories :
+    repo_key => merge(
+      # 0. Start with minimal required attributes for type consistency
+      {
+        users = {}
+        teams = {}
+      },
+      # 1. Add preset defaults (if specified)
+      try(var.repository_presets[repo_config.preset], {}),
+      # 2. Override with repository-specific config (filter nulls to preserve preset values)
+      { for k, v in repo_config : k => v if k != "preset" && v != null }
     )
   }
 
   # ========================================================================
-  # END REPOSITORY CONFIGURATION MERGE LOGIC
+  # END PRESET EXPANSION
   # ========================================================================
 
   # ========================================================================

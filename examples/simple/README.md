@@ -5,9 +5,40 @@ Minimal configuration for getting started with the GitHub Governance module in o
 ## What This Example Does
 
 - Manages a GitHub organization with basic settings
-- Creates two simple repositories
+- Creates repositories using **presets** (simplified configuration)
+- Demonstrates manual configuration alongside presets
 - Configures a runner group
 - Sets organization-level variables
+
+## ✨ Using Presets
+
+This example demonstrates the **preset feature** that drastically reduces code:
+
+**Before (manual configuration):**
+```hcl
+"my-api" = {
+  description                            = "Backend API service"
+  visibility                             = "private"
+  has_issues                             = true
+  has_projects                           = false
+  has_wiki                               = false
+  delete_branch_on_merge                 = true
+  enable_vulnerability_alerts            = true
+  enable_secret_scanning                 = true
+  enable_secret_scanning_push_protection = true
+  # ... 15+ more attributes
+}
+```
+
+**After (using preset):**
+```hcl
+"my-api" = {
+  preset      = "secure-service"  # All security features pre-configured!
+  description = "Backend API service"
+}
+```
+
+**Reduces code by 80%!** 🚀
 
 ## Prerequisites
 
@@ -36,10 +67,19 @@ Minimal configuration for getting started with the GitHub Governance module in o
    terraform apply
    ```
 
+## Available Presets
+
+| Preset | Best For | Key Features |
+|--------|----------|--------------|
+| `secure-service` | Backend APIs, microservices | Security scanning, branch protection, private |
+| `public-library` | Open source packages | Public, issues, discussions, wikis |
+| `documentation` | Docs sites, knowledge bases | GitHub Pages, public, simplified workflow |
+| `infrastructure` | Terraform, IaC repos | Security+, branch protection, signatures |
+
 ## What Gets Created
 
 - ✅ Organization settings (email, default permissions)
-- ✅ Two repositories: `my-app` and `documentation`
+- ✅ Four repositories using different presets
 - ✅ Runner group `default-runners` (accessible to all repos)
 - ✅ Organization variable `ENVIRONMENT` set to `production`
 
