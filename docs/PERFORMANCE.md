@@ -76,7 +76,7 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
    module "github_org" {
      source = "path/to/module"
      mode   = "project"
-     
+
      repositories = {
        for i in range(100) : "repo-${i}" => {
          description = "Repository ${i}"
@@ -99,7 +99,7 @@ curl -H "Authorization: token $GITHUB_TOKEN" \
    # Use workspace separation for different repo groups
    terraform workspace select prod-batch-1
    terraform apply
-   
+
    # Wait for rate limit reset
    terraform workspace select prod-batch-2
    terraform apply
@@ -137,14 +137,14 @@ terraform-github-governance/
 module "team_a_repos" {
   source = "../../"
   mode   = "project"
-  
+
   repositories = {
     # Only Team A repositories
     "team-a-api"      = { ... }
     "team-a-frontend" = { ... }
     # ... 20 more repos
   }
-  
+
   runner_groups = {
     "team-a-runners" = {
       visibility   = "selected"
@@ -162,7 +162,7 @@ module "team_a_repos" {
 # Root module - organization-wide settings
 module "org_settings" {
   source = "./modules/org-settings"
-  
+
   organization = var.organization
   webhooks     = var.org_webhooks
   rulesets     = var.org_rulesets
@@ -172,7 +172,7 @@ module "org_settings" {
 module "team_repositories" {
   source   = "./modules/team-repos"
   for_each = var.teams
-  
+
   team_name    = each.key
   repositories = each.value.repositories
   runner_group = each.value.runner_group
@@ -208,7 +208,7 @@ locals {
     for k, v in var.all_repositories :
     k => v if contains(["active", "development"], v.lifecycle)
   }
-  
+
   # Low-frequency updates
   stable_repos = {
     for k, v in var.all_repositories :
@@ -293,7 +293,7 @@ terraform apply -refresh=false
 terraform state pull | wc -c
 
 # Identify largest resources
-terraform state pull | jq '.resources | group_by(.type) | 
+terraform state pull | jq '.resources | group_by(.type) |
   map({type: .[0].type, count: length}) | sort_by(.count) | reverse'
 ```
 
@@ -396,7 +396,7 @@ jobs:
           cd workspaces/core-infrastructure
           terraform init
           terraform apply -auto-approve
-  
+
   apply-teams:
     needs: apply-core
     strategy:
@@ -451,7 +451,7 @@ jobs:
 # ❌ Too large - prone to timeouts and errors
 module "all_repos" {
   source = "./path/to/module"
-  
+
   repositories = {
     # 500 repositories defined here
   }
@@ -622,5 +622,5 @@ Before deploying to production:
 
 ---
 
-**Last Updated:** 2025-11-10  
+**Last Updated:** 2025-11-10
 **Module Version:** 1.0.0

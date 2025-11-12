@@ -32,8 +32,8 @@ run "basic_dependabot_security_updates_enabled" {
   variables {
     repositories = {
       "secure-repo" = {
-        description                    = "Repository with Dependabot security updates"
-        visibility                     = "private"
+        description                        = "Repository with Dependabot security updates"
+        visibility                         = "private"
         enable_dependabot_security_updates = true
       }
     }
@@ -57,8 +57,8 @@ run "dependabot_security_updates_disabled" {
   variables {
     repositories = {
       "no-dependabot-repo" = {
-        description                    = "Repository without Dependabot security updates"
-        visibility                     = "private"
+        description                        = "Repository without Dependabot security updates"
+        visibility                         = "private"
         enable_dependabot_security_updates = false
       }
     }
@@ -99,13 +99,13 @@ run "settings_enforces_policy" {
 
   variables {
     settings = {
-      enable_dependabot_security_updates = true  # Enforce at org level
+      enable_dependabot_security_updates = true # Enforce at org level
     }
     repositories = {
       "enforced-repo" = {
-        description                    = "Repository with enforced Dependabot"
-        visibility                     = "private"
-        enable_dependabot_security_updates = false  # Overridden by settings
+        description                        = "Repository with enforced Dependabot"
+        visibility                         = "private"
+        enable_dependabot_security_updates = false # Overridden by settings
       }
     }
   }
@@ -124,8 +124,8 @@ run "repository_value_when_no_settings" {
     # settings.enable_dependabot_security_updates not defined
     repositories = {
       "repo-controlled" = {
-        description                    = "Repository controls its own Dependabot"
-        visibility                     = "private"
+        description                        = "Repository controls its own Dependabot"
+        visibility                         = "private"
         enable_dependabot_security_updates = true
       }
     }
@@ -144,9 +144,9 @@ run "dependabot_with_vulnerability_alerts" {
   variables {
     repositories = {
       "secure-combo-repo" = {
-        description                    = "Repository with Dependabot and vulnerability alerts"
-        visibility                     = "private"
-        enable_vulnerability_alerts    = true
+        description                        = "Repository with Dependabot and vulnerability alerts"
+        visibility                         = "private"
+        enable_vulnerability_alerts        = true
         enable_dependabot_security_updates = true
       }
     }
@@ -170,18 +170,18 @@ run "multiple_repos_different_dependabot_config" {
   variables {
     repositories = {
       "secure-api" = {
-        description                    = "Secure API"
-        visibility                     = "private"
+        description                        = "Secure API"
+        visibility                         = "private"
         enable_dependabot_security_updates = true
       }
       "legacy-app" = {
-        description                    = "Legacy app without Dependabot"
-        visibility                     = "private"
+        description                        = "Legacy app without Dependabot"
+        visibility                         = "private"
         enable_dependabot_security_updates = false
       }
       "new-service" = {
-        description                    = "New service with Dependabot"
-        visibility                     = "private"
+        description                        = "New service with Dependabot"
+        visibility                         = "private"
         enable_dependabot_security_updates = true
       }
     }
@@ -239,18 +239,18 @@ run "dependabot_priority_order" {
       enable_dependabot_security_updates = false
     }
     settings = {
-      enable_dependabot_security_updates = true  # Highest priority (policy enforcement)
+      enable_dependabot_security_updates = true # Highest priority (policy enforcement)
     }
     repositories = {
       "priority-repo-1" = {
-        description                    = "Uses settings (overrides defaults)"
-        visibility                     = "private"
+        description = "Uses settings (overrides defaults)"
+        visibility  = "private"
         # No value set, inherits from settings
       }
       "priority-repo-2" = {
-        description                    = "Settings overrides repository"
-        visibility                     = "private"
-        enable_dependabot_security_updates = false  # Overridden by settings
+        description                        = "Settings overrides repository"
+        visibility                         = "private"
+        enable_dependabot_security_updates = false # Overridden by settings
       }
     }
   }
@@ -273,8 +273,8 @@ run "dependabot_with_public_repo" {
   variables {
     repositories = {
       "public-secure-repo" = {
-        description                    = "Public repository with Dependabot"
-        visibility                     = "public"
+        description                        = "Public repository with Dependabot"
+        visibility                         = "public"
         enable_dependabot_security_updates = true
       }
     }
@@ -298,12 +298,12 @@ run "dependabot_with_advanced_security" {
   variables {
     repositories = {
       "enterprise-repo" = {
-        description                        = "Enterprise repo with full security"
-        visibility                         = "private"
-        enable_vulnerability_alerts        = true
-        enable_dependabot_security_updates = true
-        enable_advanced_security           = true
-        enable_secret_scanning             = true
+        description                            = "Enterprise repo with full security"
+        visibility                             = "private"
+        enable_vulnerability_alerts            = true
+        enable_dependabot_security_updates     = true
+        enable_advanced_security               = true
+        enable_secret_scanning                 = true
         enable_secret_scanning_push_protection = true
       }
     }
@@ -363,9 +363,9 @@ run "dependabot_with_template" {
   variables {
     repositories = {
       "template-repo" = {
-        description                    = "Template repository with Dependabot"
-        visibility                     = "public"
-        is_template                    = true
+        description                        = "Template repository with Dependabot"
+        visibility                         = "public"
+        is_template                        = true
         enable_dependabot_security_updates = true
       }
     }
@@ -389,9 +389,9 @@ run "dependabot_with_archived_repo" {
   variables {
     repositories = {
       "archived-repo" = {
-        description                    = "Archived repository"
-        visibility                     = "private"
-        archived                       = true
+        description                        = "Archived repository"
+        visibility                         = "private"
+        archived                           = true
         enable_dependabot_security_updates = true
       }
     }
@@ -420,12 +420,12 @@ run "dependabot_in_project_mode" {
       repositories = ["dependabot-project-repo"]
     }
     settings = {
-      enable_dependabot_security_updates = true  # Enforce at project level
+      enable_dependabot_security_updates = true # Enforce at project level
     }
     repositories = {
       "dependabot-project-repo" = {
-        description                    = "Project mode repository with Dependabot"
-        visibility                     = "private"
+        description = "Project mode repository with Dependabot"
+        visibility  = "private"
         # Value inherited from settings
       }
     }

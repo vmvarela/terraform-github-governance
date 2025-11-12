@@ -18,7 +18,7 @@ provider "github" {
 
 # ============================================================================
 # ADVANCED RULESETS EXAMPLE
-# 
+#
 # This example demonstrates ALL GitHub ruleset features and edge cases:
 # - All enforcement levels (active, evaluate, disabled)
 # - Complex ref patterns (~DEFAULT_BRANCH, ~ALL, wildcards, regex)
@@ -1035,14 +1035,14 @@ module "github_org" {
     # "edge-case-empty-conditions" = {
     #   enforcement = "active"
     #   target      = "branch"
-    #   
+    #
     #   conditions = {
     #     ref_name = {
     #       include = []  # INVALID: must have at least one pattern
     #       exclude = []
     #     }
     #   }
-    #   
+    #
     #   rules = {
     #     deletion = true
     #   }

@@ -352,17 +352,17 @@ The `edge-case-maximum-complexity` ruleset combines ALL features:
 "edge-case-maximum-complexity" = {
   enforcement = "active"
   target      = "branch"
-  
+
   bypass_actors = {
     organization_admins = [false]
   }
-  
+
   rules = {
     deletion                = true
     update                  = true
     required_linear_history = true
     required_signatures     = true
-    
+
     pull_request = {
       required_approving_review_count   = 3
       dismiss_stale_reviews_on_push     = true
@@ -370,7 +370,7 @@ The `edge-case-maximum-complexity` ruleset combines ALL features:
       require_last_push_approval        = true
       required_review_thread_resolution = true
     }
-    
+
     required_status_checks = { /* ... */ }
     commit_message_pattern = { /* ... */ }
     commit_author_email_pattern = { /* ... */ }
@@ -441,10 +441,10 @@ After deployment, test rulesets by:
    ```bash
    # Try to delete main branch (should fail)
    git push origin :main
-   
+
    # Try to force push (should fail)
    git push --force origin main
-   
+
    # Try to create PR without approvals (should fail)
    gh pr create --fill
    ```
@@ -509,25 +509,25 @@ features_demonstrated = {
 "production-protection" = {
   enforcement = "active"
   target      = "branch"
-  
+
   conditions = {
     ref_name = { include = ["refs/heads/main", "refs/heads/production"] }
   }
-  
+
   bypass_actors = {
     organization_admins = [false]
   }
-  
+
   rules = {
     deletion                = true
     update                  = true
     required_linear_history = true
-    
+
     pull_request = {
       required_approving_review_count = 2
       require_code_owner_review       = true
     }
-    
+
     required_status_checks = {
       strict_required_status_checks_policy = true
       required_checks = [
@@ -545,21 +545,21 @@ features_demonstrated = {
 "opensource-contributions" = {
   enforcement = "active"
   target      = "branch"
-  
+
   conditions = {
     ref_name = { include = ["refs/heads/main"] }
   }
-  
+
   bypass_actors = {
     teams = ["maintainers"]
   }
-  
+
   rules = {
     pull_request = {
       required_approving_review_count = 1
       require_code_owner_review       = true
     }
-    
+
     commit_author_email_pattern = {
       name     = "Block Disposable Emails"
       pattern  = "@(tempmail\\.|throwaway\\.)"
@@ -576,25 +576,25 @@ features_demonstrated = {
 "release-workflow" = {
   enforcement = "active"
   target      = "branch"
-  
+
   conditions = {
     ref_name = { include = ["refs/heads/release/**"] }
   }
-  
+
   rules = {
     deletion = true
     update   = true
-    
+
     branch_name_pattern = {
       name     = "Semantic Version"
       pattern  = "^release/v[0-9]+\\.[0-9]+\\.[0-9]+$"
       operator = "regex"
     }
-    
+
     pull_request = {
       required_approving_review_count = 2
     }
-    
+
     required_deployments = {
       required_deployment_environments = ["staging"]
     }

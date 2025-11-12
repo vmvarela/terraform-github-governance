@@ -42,7 +42,7 @@ This directory contains comprehensive examples demonstrating different use cases
 
 - **Use case**: Large organizations with multiple teams and domains
 - **Scale**: **100 repositories** (40 backend + 20 frontend + 15 infra + 15 data + 10 mobile + 5 public)
-- **Features**: 
+- **Features**:
   - DRY configuration via settings cascade
   - Domain-driven repository organization
   - Organization-wide compliance rulesets
@@ -211,10 +211,10 @@ repositories = merge(
       }
     }
   },
-  
+
   # Frontend apps (20 repos)
   { for i in range(20) : /* ... */ },
-  
+
   # Infrastructure (15 repos)
   { for i in range(15) : /* ... */ }
 )
@@ -283,7 +283,7 @@ Modify `settings` block to affect all repositories:
 settings = {
   enable_vulnerability_alerts = true  # Enforce everywhere
   enable_secret_scanning_push_protection = true
-  
+
   issue_labels = {
     "security" = "ee0701"  # Add to all repos
   }
@@ -299,11 +299,11 @@ rulesets = {
   "my-custom-rule" = {
     enforcement = "active"
     target      = "branch"
-    
+
     conditions = {
       ref_name = { include = ["~ALL"] }  # All branches
     }
-    
+
     rules = {
       required_linear_history = true  # Enforce everywhere
     }

@@ -23,11 +23,11 @@ All error messages include:
 
 ### TF-GH-001: Organization Webhooks Not Available
 
-**Category:** Plan Limitation  
-**Severity:** Error  
+**Category:** Plan Limitation
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Organization-level webhooks require a paid GitHub plan (Team, Business, or Enterprise). The Free plan only supports repository-level webhooks.
 
 **When It Occurs:**
@@ -46,11 +46,11 @@ Organization-level webhooks require a paid GitHub plan (Team, Business, or Enter
 
 ### TF-GH-002: Organization Rulesets Not Available
 
-**Category:** Plan Limitation  
-**Severity:** Error  
+**Category:** Plan Limitation
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Organization rulesets are a feature that requires GitHub Team, Business, or Enterprise plan.
 
 **When It Occurs:**
@@ -69,11 +69,11 @@ Organization rulesets are a feature that requires GitHub Team, Business, or Ente
 
 ### TF-GH-003: Custom Repository Roles Not Available
 
-**Category:** Plan Limitation  
-**Severity:** Error  
+**Category:** Plan Limitation
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Custom repository roles are an Enterprise-only feature that allows creating roles with specific permission sets beyond the standard roles.
 
 **When It Occurs:**
@@ -99,11 +99,11 @@ Custom repository roles are an Enterprise-only feature that allows creating role
 
 ### TF-GH-004: Internal Repositories Not Available
 
-**Category:** Plan Limitation  
-**Severity:** Error  
+**Category:** Plan Limitation
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Internal repository visibility is only available on GitHub Business and Enterprise plans. Internal repos are visible to all organization members but not external users.
 
 **When It Occurs:**
@@ -125,11 +125,11 @@ Internal repository visibility is only available on GitHub Business and Enterpri
 
 ### TF-GH-005: Runner Group Configuration Error
 
-**Category:** Configuration Error  
-**Severity:** Error  
+**Category:** Configuration Error
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Runner groups with `visibility = "selected"` must specify at least one repository. Empty repository lists are not allowed.
 
 **When It Occurs:**
@@ -167,11 +167,11 @@ runner_groups = {
 
 ### TF-GH-006: Plaintext Secrets Deprecated
 
-**Category:** Security / Deprecation  
-**Severity:** Error  
+**Category:** Security / Deprecation
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Storing plaintext secrets in the `secrets` variable is deprecated for security reasons. Terraform state files are not encrypted by default, exposing secrets to anyone with state access.
 
 **When It Occurs:**
@@ -210,11 +210,11 @@ Storing plaintext secrets in the `secrets` variable is deprecated for security r
 
 ### TF-GH-007: Plaintext Dependabot Secrets Deprecated
 
-**Category:** Security / Deprecation  
-**Severity:** Error  
+**Category:** Security / Deprecation
+**Severity:** Error
 **Introduced:** v1.0.0
 
-**Description:**  
+**Description:**
 Similar to TF-GH-006, but specifically for Dependabot secrets. Plaintext storage in state files is a security risk.
 
 **When It Occurs:**
@@ -232,7 +232,7 @@ Similar to TF-GH-006, but specifically for Dependabot secrets. Plaintext storage
    dependabot_secrets = {
      "NPM_TOKEN" = "plaintext-value"
    }
-   
+
    # ✅ Use this
    dependabot_secrets_encrypted = {
      "NPM_TOKEN" = "encrypted_base64_value"
@@ -325,14 +325,14 @@ When adding new error codes:
    ```terraform
    error_message = <<-EOT
      [TF-GH-XXX] ❌ Clear error description
-     
+
      Context: ${relevant_variable}
-     
+
      Solutions:
        1. Solution with example
        2. Alternative solution
        3. Upgrade path (if applicable)
-     
+
      Documentation: https://docs.github.com/...
    EOT
    ```
@@ -362,5 +362,5 @@ The following error code ranges are reserved for future use:
 
 ---
 
-**Last Updated:** 2025-11-10  
+**Last Updated:** 2025-11-10
 **Module Version:** 1.0.0

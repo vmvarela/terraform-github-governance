@@ -1,0 +1,133 @@
+{
+  "name": "Terraform GitHub Governance",
+  // Multi-architecture support: Works on both amd64 (Intel/AMD) and arm64 (Apple Silicon)
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    // Terraform with latest version
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest",
+      "tflint": "latest",
+      "terragrunt": "none"
+    },
+    // GitHub CLI
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    },
+    // Common utilities
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "configureZshAsDefaultShell": true,
+      "username": "vscode",
+      "userUid": "automatic",
+      "userGid": "automatic"
+    },
+    // Git
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest",
+      "ppa": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      // Extensions to install
+      "extensions": [
+        // Terraform
+        "hashicorp.terraform",
+        "HashiCorp.HCL",
+        // Git & GitHub
+        "github.vscode-pull-request-github",
+        "github.copilot",
+        "github.copilot-chat",
+        "eamodio.gitlens",
+        // Markdown
+        "yzhang.markdown-all-in-one",
+        "DavidAnson.vscode-markdownlint",
+        // YAML
+        "redhat.vscode-yaml",
+        // Formatting & Linting
+        "esbenp.prettier-vscode",
+        "editorconfig.editorconfig",
+        // Utilities
+        "streetsidesoftware.code-spell-checker",
+        "wayou.vscode-todo-highlight",
+        "aaron-bond.better-comments"
+      ],
+      // Settings
+      "settings": {
+        // Terraform
+        "terraform.languageServer": {
+          "enabled": true,
+          "args": []
+        },
+        "terraform.experimentalFeatures": {
+          "validateOnSave": true,
+          "prefillRequiredFields": true
+        },
+        // Editor
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": false,
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.rulers": [
+          120
+        ],
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        // Files associations
+        "[terraform]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.formatAll.terraform": "explicit"
+          }
+        },
+        "[terraform-vars]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true
+        },
+        "[markdown]": {
+          "editor.defaultFormatter": "vscode.markdown-language-features",
+          "editor.formatOnSave": true,
+          "editor.wordWrap": "on"
+        },
+        "[yaml]": {
+          "editor.defaultFormatter": "redhat.vscode-yaml",
+          "editor.formatOnSave": true
+        },
+        // Git
+        "git.autofetch": true,
+        "git.confirmSync": false,
+        "git.enableSmartCommit": true,
+        // Terminal
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/bin/zsh"
+          }
+        }
+      }
+    }
+  },
+  // Post-create commands
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  // Forward ports
+  "forwardPorts": [],
+  // Use 'postAttachCommand' to run commands after the container is created.
+  "postAttachCommand": "terraform version && gh version && terraform-docs version && tflint --version",
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root",
+  "remoteUser": "vscode",
+  // Features to run on container start
+  "onCreateCommand": "bash -c 'if [ -f /tmp/.gitconfig-host ]; then cp /tmp/.gitconfig-host ~/.gitconfig; fi && git config --global --add safe.directory ${containerWorkspaceFolder}'",
+  // Mounts
+  "mounts": [
+    // Mount SSH keys for git operations (readonly)
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
+    // Copy git config to temp (will be copied in onCreateCommand)
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/tmp/.gitconfig-host,type=bind,readonly",
+    // Mount GitHub CLI config (if exists)
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
+  ]
+}

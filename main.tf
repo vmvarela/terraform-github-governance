@@ -20,6 +20,7 @@ locals {
     "actions_allowed_patterns",
     "actions_allowed_policy",
     "actions_allowed_verified",
+    "workflow_permissions",
     "allow_auto_merge",
     "allow_merge_commit",
     "allow_rebase_merge",
@@ -187,6 +188,42 @@ locals {
   # END REPOSITORY CONFIGURATION MERGE LOGIC
   # ========================================================================
 
+  # ========================================================================
+  # APPLY GLOBAL USER OPTIMIZATION TO REPOSITORIES
+  # ========================================================================
+  # APPLY GLOBAL USER OPTIMIZATION TO REPOSITORIES (Project Mode Only)
+  # ========================================================================
+  # In project mode: Replace optimized global users with team assignments
+  # In organization mode: Keep as-is (organization roles handle permissions globally)
+
+  # Build map of optimized team IDs by role (for reference after team creation)
+  optimized_team_ids = local.is_project_mode ? {
+    for role in keys(local.optimizable_global_roles) :
+    role => github_team.global_role_teams[role].id
+  } : {}
+
+  repositories_optimized = local.is_project_mode ? {
+    for repo_key, repo_config in local.repositories :
+    repo_key => merge(repo_config, {
+      # Remove global users that are now in optimized teams
+      users = {
+        for user, role in try(repo_config.users, {}) :
+        user => role
+        # Keep user if: NOT a global user OR role is not optimizable
+        if !(contains(keys(local.settings.users), user) && contains(keys(local.optimizable_global_roles), role))
+      }
+      # Add optimized teams with their role permissions
+      teams = merge(
+        try(repo_config.teams, {}),
+        # Add team ID => role mapping for optimized teams
+        {
+          for role in keys(local.optimizable_global_roles) :
+          local.optimized_team_ids[role] => role
+        }
+      )
+    })
+  } : local.repositories # In organization mode, no changes needed
+
   github_org        = var.mode == "organization" ? var.name : var.github_org
   info_repositories = var.info_repositories != null ? var.info_repositories : try(data.github_repositories.all[0], null)
 
@@ -212,7 +249,41 @@ locals {
   # DRY: Mode-related computed values
   is_project_mode        = var.mode == "project"
   project_repository_ids = local.is_project_mode ? [for k, r in github_repository.repo : r.repo_id] : []
+
+  # ========================================================================
+  # GLOBAL USER ROLE OPTIMIZATION
+  # Groups global users (var.users) by role to create teams/roles when 2+ users share the same role
+  # Only affects users defined at module level, NOT repository-specific users
+  # ========================================================================
+
+  # Step 1: Group global users by role
+  # Source: var.users (merged into local.settings.users)
+  # Result: { "admin" => ["user1", "user2"], "write" => ["user3", "user4"] }
+  global_users_by_role = {
+    for role in distinct(values(local.settings.users)) :
+    role => [for user, user_role in local.settings.users : user if user_role == role]
+  }
+
+  # Step 2: Identify roles with 2+ users (eligible for team/role optimization)
+  # Result: { "admin" => ["user1", "user2"] } (only roles with 2+ users)
+  optimizable_global_roles = {
+    for role, users in local.global_users_by_role :
+    role => users
+    if length(users) >= 2
+  }
+
+  # Step 3: Generate team/role names
+  # Organization mode: role name = "auto-<role>" (will create organization_role)
+  # Project mode: team name = "<project-name>-<role>" (will create github_team)
+  optimized_role_names = {
+    for role in keys(local.optimizable_global_roles) :
+    role => local.is_project_mode ? "${var.name}-${role}" : "auto-${role}"
+  }
 }
+
+# ========================================================================
+# DATA SOURCES
+# ========================================================================
 
 data "github_repositories" "all" {
   count           = var.info_repositories == null ? 1 : 0
@@ -225,6 +296,10 @@ data "github_organization" "this" {
   count = var.info_organization == null ? 1 : 0
   name  = local.github_org
 }
+
+# ========================================================================
+# VALIDATION CHECKS
+# ========================================================================
 
 # Validate organization plan for features that require paid plans
 check "organization_plan_validation" {
@@ -349,50 +424,9 @@ assert {
 }
 }
 
-# organization_settings
-resource "github_organization_settings" "this" {
-  count                                                        = var.mode == "organization" ? 1 : 0
-  name                                                         = try(var.settings.display_name, null)
-  description                                                  = try(var.settings.description, null)
-  billing_email                                                = try(var.settings.billing_email, null)
-  company                                                      = try(var.settings.company, null)
-  blog                                                         = try(var.settings.blog, null)
-  email                                                        = try(var.settings.email, null)
-  twitter_username                                             = try(var.settings.twitter_username, null)
-  location                                                     = try(var.settings.location, null)
-  has_organization_projects                                    = try(var.settings.has_organization_projects, null)
-  default_repository_permission                                = try(var.settings.default_repository_permission, null)
-  members_can_create_repositories                              = try(var.settings.members_can_create_repositories, null)
-  members_can_create_public_repositories                       = try(var.settings.members_can_create_public_repositories, null)
-  members_can_create_private_repositories                      = try(var.settings.members_can_create_private_repositories, null)
-  members_can_create_internal_repositories                     = try(var.settings.members_can_create_internal_repositories, null)
-  members_can_create_pages                                     = try(var.settings.members_can_create_pages, null)
-  members_can_create_public_pages                              = try(var.settings.members_can_create_public_pages, null)
-  members_can_create_private_pages                             = try(var.settings.members_can_create_private_pages, null)
-  members_can_fork_private_repositories                        = try(var.settings.members_can_fork_private_repositories, null)
-  has_repository_projects                                      = try(coalesce(local.settings.has_projects, local.defaults.has_projects), null)
-  advanced_security_enabled_for_new_repositories               = try(coalesce(local.settings.enable_advanced_security, local.defaults.enable_advanced_security), null)
-  dependabot_security_updates_enabled_for_new_repositories     = try(coalesce(local.settings.enable_dependabot_security_updates, local.defaults.enable_dependabot_security_updates), null)
-  secret_scanning_enabled_for_new_repositories                 = try(coalesce(local.settings.enable_secret_scanning, local.defaults.enable_secret_scanning), null)
-  secret_scanning_push_protection_enabled_for_new_repositories = try(coalesce(local.settings.enable_secret_scanning_push_protection, local.defaults.enable_secret_scanning_push_protection), null)
-  dependabot_alerts_enabled_for_new_repositories               = try(coalesce(local.settings.enable_vulnerability_alerts, local.defaults.enable_vulnerability_alerts), null)
-  dependency_graph_enabled_for_new_repositories                = try(coalesce(local.settings.enable_dependency_graph, local.defaults.enable_dependency_graph), null)
-  web_commit_signoff_required                                  = try(coalesce(local.settings.web_commit_signoff_required, local.defaults.web_commit_signoff_required), null)
-
-  lifecycle {
-    # PROTECTION: Critical organization settings should not be destroyed without review
-    prevent_destroy = true
-
-    # IGNORE: Fields that are often modified outside Terraform via GitHub UI
-    ignore_changes = [
-      name,
-      description,
-      blog,
-      twitter_username,
-      location,
-    ]
-  }
-}
+# ========================================================================
+# ORGANIZATION-WIDE VARIABLES AND SECRETS
+# ========================================================================
 
 # actions_organization_variable
 resource "github_actions_organization_variable" "this" {
@@ -439,7 +473,61 @@ resource "github_dependabot_organization_secret" "encrypted" {
   selected_repository_ids = local.is_project_mode ? local.project_repository_ids : null
 }
 
+# ========================================================================
+# RUNNER GROUPS
+# ========================================================================
+
+# actions_runner_group
+resource "github_actions_runner_group" "this" {
+  for_each = var.runner_groups
+  name     = format(local.spec, each.key)
+
+  # In project mode: always 'selected' with module repositories only
+  # In organization mode: use configured visibility (all/selected/private)
+  visibility = local.is_project_mode ? "selected" : try(each.value.visibility, "all")
+
+  # Convert repository names to IDs for selected_repository_ids
+  selected_repository_ids = (
+    local.is_project_mode ?
+    # PROJECT MODE: Only allow repositories managed by this module
+    # Ignore any 'repositories' config - use all module repos
+    local.project_repository_ids :
+
+    # ORGANIZATION MODE: Allow any repository in the organization
+    try(each.value.visibility, "all") == "selected" && length(try(each.value.repositories, [])) > 0 ?
+    # Filter out nulls from failed lookups (repo doesn't exist)
+    compact([for repo_ref in each.value.repositories :
+      # Support both numeric IDs and repository names
+      can(tonumber(repo_ref)) ?
+      tonumber(repo_ref) :
+      lookup(local.github_repository_id, repo_ref, null)
+    ]) :
+    null
+  )
+
+  restricted_to_workflows = try(each.value.workflows, null) != null
+  selected_workflows      = try(each.value.workflows, null)
+
+  lifecycle {
+    # PROTECTION: Runner groups contain infrastructure configuration
+    prevent_destroy = true
+
+    # STRATEGY: Allow modifications without recreating
+    create_before_destroy = true
+  }
+
+  # Ensure repositories are resolved before creating runner group
+  depends_on = [github_repository.repo]
+}
+
+# ========================================================================
+# ORGANIZATION RULESETS (Dual-Mode: Organization + Project)
+# ========================================================================
+
 # organization_ruleset
+# NOTE: Works in BOTH organization and project modes
+# - Organization mode: Applies to all repos in organization (using var.spec for naming)
+# - Project mode: Applies only to repos managed by this module
 resource "github_organization_ruleset" "this" {
   for_each    = coalesce(var.rulesets, {})
   name        = format(local.spec, each.key)
@@ -570,71 +658,48 @@ resource "github_organization_ruleset" "this" {
   }
 }
 
-# actions_runner_group
-resource "github_actions_runner_group" "this" {
-  for_each = var.runner_groups
-  name     = format(local.spec, each.key)
+# ========================================================================
+# GLOBAL USER ROLE OPTIMIZATION - PROJECT MODE (Teams)
+# ========================================================================
 
-  # In project mode: always 'selected' with module repositories only
-  # In organization mode: use configured visibility (all/selected/private)
-  visibility = local.is_project_mode ? "selected" : try(each.value.visibility, "all")
+# Create teams for global roles with 2+ users in project mode
+resource "github_team" "global_role_teams" {
+  for_each = local.is_project_mode ? local.optimizable_global_roles : {}
 
-  # Convert repository names to IDs for selected_repository_ids
-  selected_repository_ids = (
-    local.is_project_mode ?
-    # PROJECT MODE: Only allow repositories managed by this module
-    # Ignore any 'repositories' config - use all module repos
-    local.project_repository_ids :
-
-    # ORGANIZATION MODE: Allow any repository in the organization
-    try(each.value.visibility, "all") == "selected" && length(try(each.value.repositories, [])) > 0 ?
-    # Filter out nulls from failed lookups (repo doesn't exist)
-    compact([for repo_ref in each.value.repositories :
-      # Support both numeric IDs and repository names
-      can(tonumber(repo_ref)) ?
-      tonumber(repo_ref) :
-      lookup(local.github_repository_id, repo_ref, null)
-    ]) :
-    null
-  )
-
-  restricted_to_workflows = try(each.value.workflows, null) != null
-  selected_workflows      = try(each.value.workflows, null)
+  name        = local.optimized_role_names[each.key]
+  description = "Auto-created team for ${each.key} role - ${length(each.value)} global users"
+  privacy     = "closed"
 
   lifecycle {
-    # PROTECTION: Runner groups contain infrastructure configuration
-    prevent_destroy = true
-
-    # STRATEGY: Allow modifications without recreating
+    prevent_destroy       = false
     create_before_destroy = true
   }
-
-  # Ensure repositories are resolved before creating runner group
-  depends_on = [github_repository.repo]
 }
 
-# organization_repository_role
-# NOTE: Using deprecated github_organization_custom_role due to provider bug in github_organization_repository_role
-# TODO: Migrate to github_organization_repository_role when provider issue is fixed
-resource "github_organization_custom_role" "this" {
-  for_each    = var.mode == "organization" ? coalesce(var.repository_roles, {}) : {}
-  name        = each.key
-  description = each.value.description
-  base_role   = each.value.base_role
-  permissions = each.value.permissions
+# Add global users to role teams in project mode
+resource "github_team_membership" "global_role_members" {
+  for_each = local.is_project_mode ? {
+    for item in flatten([
+      for role, users in local.optimizable_global_roles : [
+        for user in users : {
+          key      = "${role}-${user}"
+          team_id  = role
+          username = user
+          role     = role
+        }
+      ]
+    ]) : item.key => item
+  } : {}
+
+  team_id  = github_team.global_role_teams[each.value.role].id
+  username = each.value.username
+  role     = "member"
 }
 
-# organization_webhook
-# NOTE: Organization webhooks require GitHub Team or Enterprise plan.
-# For GitHub Free organizations, use repository-level webhooks instead.
-resource "github_organization_webhook" "this" {
-  for_each = var.mode == "organization" ? coalesce(var.webhooks, {}) : {}
-  active   = true
-  configuration {
-    url          = each.value.url
-    content_type = each.value.content_type
-    insecure_ssl = each.value.insecure_ssl
-    secret       = each.value.secret
-  }
-  events = each.value.events
-}
+# ========================================================================
+# GLOBAL USER ROLE OPTIMIZATION - ORGANIZATION MODE (Organization Roles)
+# ========================================================================
+
+# In organization mode, we use github_organization_role_user (already in organization.tf)
+# to assign users directly to organization-wide roles. We just need to add the auto-created
+# roles to var.organization_role_assignments which gets processed in organization.tf

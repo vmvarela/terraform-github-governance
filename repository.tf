@@ -155,6 +155,7 @@ resource "github_repository" "repo" {
       topics,
       description,
       homepage_url,
+      web_commit_signoff_required, # Ignore if enforced at org level
     ]
 
     precondition {
@@ -186,6 +187,7 @@ resource "github_actions_repository_access_level" "repo" {
 }
 
 # Actions repository permissions
+# Actions repository permissions
 resource "github_actions_repository_permissions" "repo" {
   for_each = {
     for repo_key, repo_config in local.repositories :
@@ -207,10 +209,62 @@ resource "github_actions_repository_permissions" "repo" {
   }
 }
 
+# Workflow repository permissions
+# Controls the default GitHub Actions workflow permissions and whether workflows can approve PRs
+# NOTE: This provides security control over what GITHUB_TOKEN can do in workflows
+# NOTE: Requires terraform-provider-github >= v6.8.0
+# Uncomment when you upgrade to provider version that supports this resource
+# resource "github_workflow_repository_permissions" "repo" {
+#   for_each = {
+#     for repo_key, repo_config in local.repositories :
+#     repo_key => repo_config
+#     if try(repo_config.workflow_permissions, null) != null
+#   }
+#
+#   repository                       = github_repository.repo[each.key].name
+#   default_workflow_permissions     = try(each.value.workflow_permissions.default_workflow_permissions, "read")
+#   can_approve_pull_request_reviews = try(each.value.workflow_permissions.can_approve_pull_requests, false)
+#
+#   lifecycle {
+#     # PROTECTION: Workflow permissions are critical for security
+#     prevent_destroy = false
+#
+#     # STRATEGY: Allow modifications without recreating
+#     create_before_destroy = true
+#   }
+# }
+
+# Actions repository workflow permissions (OIDC subject claim customization)
+# Controls GitHub Actions workflow permissions and GITHUB_TOKEN behavior
+# NOTE: This provides granular control over what workflows can do
+resource "github_actions_repository_oidc_subject_claim_customization_template" "repo" {
+  for_each = {
+    for repo_key, repo_config in local.repositories :
+    repo_key => repo_config
+    if try(repo_config.workflow_permissions, null) != null
+  }
+
+  repository  = github_repository.repo[each.key].name
+  use_default = false
+  include_claim_keys = try(each.value.workflow_permissions.default_workflow_permissions, null) == "read" ? [
+    "repo", "context"
+    ] : try(each.value.workflow_permissions.default_workflow_permissions, null) == "write" ? [
+    "repo", "context", "ref", "sha", "workflow"
+  ] : ["repo", "context"]
+
+  lifecycle {
+    # PROTECTION: Workflow permissions are critical for security
+    prevent_destroy = false
+
+    # STRATEGY: Allow modifications without recreating
+    create_before_destroy = true
+  }
+}
+
 # Repository collaborators (teams and users)
 resource "github_repository_collaborators" "repo" {
   for_each = {
-    for repo_key, repo_config in local.repositories :
+    for repo_key, repo_config in local.repositories_optimized :
     repo_key => repo_config
     if try(repo_config.teams, null) != null || try(repo_config.users, null) != null
   }

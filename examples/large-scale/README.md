@@ -300,7 +300,7 @@ To add a new domain (e.g., "ML team" with 10 repos):
 ```hcl
 repositories = merge(
   # ... existing repositories ...
-  
+
   # ML Team (10 repositories)
   { for i in range(10) :
     "ml-model-${format("%02d", i)}" => {
@@ -331,12 +331,12 @@ Modify `settings` to change organization-wide policies:
 settings = {
   # Make secret scanning push protection optional
   enable_secret_scanning_push_protection = false
-  
+
   # Add more labels
   issue_labels = {
     "urgent" = "ff0000"  # bright red for urgent issues
   }
-  
+
   # Add more secrets
   secrets_encrypted = {
     CUSTOM_API_KEY = var.custom_api_key_encrypted
@@ -351,24 +351,24 @@ Create additional organization-wide rules:
 ```hcl
 rulesets = {
   # ... existing rulesets ...
-  
+
   "security-review-for-prod" = {
     enforcement = "active"
     target = "branch"
-    
+
     conditions = {
       ref_name = {
         include = ["refs/heads/main", "refs/heads/release/**"]
       }
     }
-    
+
     rules = {
       pull_request = {
         required_approving_review_count = 2
         require_code_owner_review = true
       }
     }
-    
+
     bypass_actors = {
       teams = ["security-team"]
     }

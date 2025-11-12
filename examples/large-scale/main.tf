@@ -25,7 +25,7 @@ provider "github" {
 
 # ============================================================================
 # LARGE SCALE ORGANIZATION EXAMPLE
-# 
+#
 # This example demonstrates managing a large organization with:
 # - 100+ repositories across multiple teams
 # - Consistent security policies via settings
@@ -331,7 +331,9 @@ module "github_org" {
       }
 
       bypass_actors = {
-        organization_admins = [true]
+        repository_roles = {
+          repository_role_id = 1
+        }
       }
 
       rules = {
@@ -349,7 +351,7 @@ module "github_org" {
 
         required_status_checks = {
           strict_required_status_checks_policy = true
-          required_checks = [
+          required_status_checks = [
             { context = "ci/tests" },
             { context = "ci/lint" },
             { context = "security/scan" }

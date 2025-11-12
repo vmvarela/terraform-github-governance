@@ -133,15 +133,19 @@ variable "settings" {
     actions_allowed_github                 = optional(bool)
     actions_allowed_verified               = optional(bool)
     actions_allowed_patterns               = optional(set(string))
-    merge_commit_title                     = optional(string)
-    merge_commit_message                   = optional(string)
-    squash_merge_commit_title              = optional(string)
-    squash_merge_commit_message            = optional(string)
-    web_commit_signoff_required_repo       = optional(bool)
-    pages_source_branch                    = optional(string)
-    pages_source_path                      = optional(string)
-    pages_build_type                       = optional(string)
-    pages_cname                            = optional(string)
+    workflow_permissions = optional(object({
+      default_workflow_permissions = optional(string, "read") # "read" or "write"
+      can_approve_pull_requests    = optional(bool, false)
+    }))
+    merge_commit_title               = optional(string)
+    merge_commit_message             = optional(string)
+    squash_merge_commit_title        = optional(string)
+    squash_merge_commit_message      = optional(string)
+    web_commit_signoff_required_repo = optional(bool)
+    pages_source_branch              = optional(string)
+    pages_source_path                = optional(string)
+    pages_build_type                 = optional(string)
+    pages_cname                      = optional(string)
 
     # Nested configurations
     variables = optional(map(string), {})
@@ -311,15 +315,19 @@ variable "repositories" {
     actions_allowed_github                 = optional(bool, true)
     actions_allowed_verified               = optional(bool)
     actions_allowed_patterns               = optional(set(string))
-    merge_commit_title                     = optional(string)
-    merge_commit_message                   = optional(string)
-    squash_merge_commit_title              = optional(string)
-    squash_merge_commit_message            = optional(string)
-    web_commit_signoff_required            = optional(bool)
-    pages_source_branch                    = optional(string)
-    pages_source_path                      = optional(string)
-    pages_build_type                       = optional(string)
-    pages_cname                            = optional(string)
+    workflow_permissions = optional(object({
+      default_workflow_permissions = optional(string, "read") # "read" or "write"
+      can_approve_pull_requests    = optional(bool, false)
+    }))
+    merge_commit_title          = optional(string)
+    merge_commit_message        = optional(string)
+    squash_merge_commit_title   = optional(string)
+    squash_merge_commit_message = optional(string)
+    web_commit_signoff_required = optional(bool)
+    pages_source_branch         = optional(string)
+    pages_source_path           = optional(string)
+    pages_build_type            = optional(string)
+    pages_cname                 = optional(string)
 
     # Nested configurations
     teams                        = optional(map(string))
@@ -838,5 +846,253 @@ variable "webhooks" {
       !can(regex("^http://", webhook.url)) || webhook.insecure_ssl == true
     ])
     error_message = "SECURITY WARNING: HTTP webhooks (non-HTTPS) detected. Consider using HTTPS for secure communication."
+  }
+}
+
+variable "security_managers" {
+  description = <<-EOT
+    Teams designated as security managers for the organization.
+
+    Security managers can manage security alerts and settings for all repositories
+    in the organization without requiring full admin access.
+
+    ⚠️ REQUIRES: GitHub Team plan or higher
+
+    Security managers can:
+    - Manage security and analysis settings for all repositories
+    - View security alerts across the organization
+    - Manage Dependabot and code scanning alerts
+    - Configure secret scanning settings
+
+    Example:
+      security_managers = ["security-team", "appsec-team"]
+  EOT
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for team_slug in var.security_managers :
+      can(regex("^[a-z0-9][a-z0-9-]*$", team_slug))
+    ])
+    error_message = "Team slugs must contain only lowercase letters, numbers, and hyphens, and cannot start with a hyphen."
+  }
+}
+
+variable "custom_properties_schema" {
+  description = <<-EOT
+    Organization-wide custom properties schema definition.
+
+    Custom properties allow you to add metadata to repositories in your organization.
+    These properties can be used for categorization, compliance tracking, and reporting.
+
+    ⚠️ REQUIRES: GitHub Enterprise Cloud
+
+    Property types:
+    - string: Free-form text (requires default_value if required=true)
+    - single_select: One value from predefined list (cannot have default_value if required=false)
+
+    IMPORTANT RULES:
+    - Required string properties MUST have a default_value
+    - Optional properties (required=false) CANNOT have a default_value
+    - Single_select properties must have allowed_values
+
+    Example:
+      custom_properties_schema = {
+        "cost_center" = {
+          description    = "Cost center for billing allocation"
+          value_type     = "single_select"
+          required       = true
+          allowed_values = ["engineering", "sales", "marketing"]
+          default_value  = "engineering"
+        }
+        "team_owner" = {
+          description   = "Team responsible for this repository"
+          value_type    = "string"
+          required      = true
+          default_value = "unassigned" # Required for required string properties
+        }
+        "compliance_level" = {
+          description    = "Required compliance level"
+          value_type     = "single_select"
+          required       = false
+          allowed_values = ["sox", "pci", "hipaa", "none"]
+          # No default_value - optional properties cannot have defaults
+        }
+      }
+  EOT
+  type = map(object({
+    description    = optional(string)
+    value_type     = string
+    required       = optional(bool, false)
+    default_value  = optional(string)
+    allowed_values = optional(list(string))
+  }))
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for name, prop in var.custom_properties_schema :
+      contains(["string", "single_select"], prop.value_type)
+    ])
+    error_message = "Property value_type must be either 'string' or 'single_select'."
+  }
+
+  validation {
+    condition = alltrue([
+      for name, prop in var.custom_properties_schema :
+      prop.value_type != "single_select" || (try(length(prop.allowed_values), 0) > 0)
+    ])
+    error_message = "Properties of type 'single_select' must have allowed_values defined."
+  }
+
+  validation {
+    condition = alltrue([
+      for name, prop in var.custom_properties_schema :
+      prop.default_value == null || try(contains(prop.allowed_values, prop.default_value), true)
+    ])
+    error_message = "default_value must be one of the allowed_values when both are specified."
+  }
+
+  validation {
+    condition = alltrue([
+      for name, prop in var.custom_properties_schema :
+      can(regex("^[a-z_][a-z0-9_]*$", name))
+    ])
+    error_message = "Property names must start with a letter or underscore and contain only lowercase letters, numbers, and underscores."
+  }
+
+  validation {
+    condition = alltrue([
+      for name, prop in var.custom_properties_schema :
+      # Required string properties MUST have a default_value
+      prop.value_type != "string" || !try(prop.required, false) || prop.default_value != null
+    ])
+    error_message = "Required string properties must have a default_value specified."
+  }
+
+  validation {
+    condition = alltrue([
+      for name, prop in var.custom_properties_schema :
+      # Optional properties CANNOT have a default_value
+      try(prop.required, false) || prop.default_value == null
+    ])
+    error_message = "Optional properties (required=false) cannot have a default_value."
+  }
+}
+
+variable "organization_roles" {
+  description = <<-EOT
+    Custom organization roles definition.
+
+    Organization roles provide fine-grained access control across the entire organization,
+    including organization-level settings, repositories, and resources.
+
+    ⚠️ REQUIRES: GitHub Enterprise Cloud
+
+    Base roles (inherits permissions from):
+    - read: Basic read access
+    - triage: Can manage issues and pull requests
+    - write: Can push to repositories
+    - maintain: Can manage repositories
+    - admin: Full administrative access
+
+    Example:
+      organization_roles = {
+        "security-admin" = {
+          description = "Security administrator with audit access"
+          base_role   = "read"
+          permissions = [
+            "read_audit_logs",
+            "read_organization_custom_org_role",
+            "read_organization_custom_repo_role"
+          ]
+        }
+        "release-manager" = {
+          description = "Can manage releases and deployments"
+          base_role   = "write"
+          permissions = [
+            "read_organization_actions_usage_metrics",
+            "write_organization_actions_variables"
+          ]
+        }
+      }
+
+    For available permissions, see:
+    https://docs.github.com/en/enterprise-cloud@latest/rest/orgs/organization-roles
+  EOT
+  type = map(object({
+    description = optional(string)
+    base_role   = optional(string)
+    permissions = list(string)
+  }))
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for name, role in var.organization_roles :
+      length(role.permissions) > 0
+    ])
+    error_message = "Organization roles must have at least one permission."
+  }
+
+  validation {
+    condition = alltrue([
+      for name, role in var.organization_roles :
+      try(role.base_role, null) == null || contains(["read", "triage", "write", "maintain", "admin"], role.base_role)
+    ])
+    error_message = "Organization role base_role must be one of: read, triage, write, maintain, admin."
+  }
+}
+
+variable "organization_role_assignments" {
+  description = <<-EOT
+    Assign organization roles to users and teams.
+
+    This allows you to grant custom organization roles to specific users and teams
+    in your organization. Assignments can reference both custom roles (defined in
+    organization_roles) and built-in predefined roles.
+
+    ⚠️ REQUIRES: GitHub Enterprise Cloud (for custom roles)
+
+    Example:
+      organization_role_assignments = {
+        users = {
+          "security-admin" = ["user1", "user2"]
+          "release-manager" = ["user3"]
+        }
+        teams = {
+          "security-admin" = ["security-team", "audit-team"]
+          "release-manager" = ["devops-team"]
+        }
+      }
+
+    Note: The role names must match either:
+    - Keys defined in var.organization_roles (custom roles)
+    - GitHub predefined role IDs (e.g., "8132" for all_repo_read)
+  EOT
+  type = object({
+    users = optional(map(list(string)), {})
+    teams = optional(map(list(string)), {})
+  })
+  default = {
+    users = {}
+    teams = {}
+  }
+
+  validation {
+    condition = alltrue([
+      for role_name, users in var.organization_role_assignments.users :
+      alltrue([for user in users : can(regex("^[a-zA-Z0-9-]+$", user))])
+    ])
+    error_message = "User logins must contain only alphanumeric characters and hyphens."
+  }
+
+  validation {
+    condition = alltrue([
+      for role_name, teams in var.organization_role_assignments.teams :
+      alltrue([for team in teams : can(regex("^[a-z0-9][a-z0-9-]*$", team))])
+    ])
+    error_message = "Team slugs must contain only lowercase letters, numbers, and hyphens, and cannot start with a hyphen."
   }
 }

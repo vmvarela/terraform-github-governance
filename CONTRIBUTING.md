@@ -229,7 +229,7 @@ When adding new features, ensure:
 variable "my_feature" {
   description = <<-EOT
     Clear description of the variable purpose.
-    
+
     Example:
     {
       key = "value"
@@ -240,7 +240,7 @@ variable "my_feature" {
     key = string
   })
   default = null  # Provide sensible defaults
-  
+
   validation {
     condition     = var.my_feature != null ? length(var.my_feature) > 0 : true
     error_message = "Clear, actionable error message."
@@ -255,7 +255,7 @@ Add tests in `tests/` directory:
 ```hcl
 run "test_my_feature" {
   command = plan
-  
+
   variables {
     mode = "organization"
     name = "test-org"
@@ -266,7 +266,7 @@ run "test_my_feature" {
       key = "value"
     }
   }
-  
+
   assert {
     condition     = length(var.my_feature) == 1
     error_message = "Feature should be configured"

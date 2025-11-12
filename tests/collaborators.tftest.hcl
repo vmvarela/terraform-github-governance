@@ -281,14 +281,14 @@ run "settings_enforces_collaborators_policy" {
   variables {
     settings = {
       teams = {
-        "default-team" = "admin"  # Organization enforces admin access
+        "default-team" = "admin" # Organization enforces admin access
       }
     }
     repositories = {
       "policy-repo" = {
         description = "Repository with enforced team policy"
         teams = {
-          "default-team" = "read"  # Overridden by settings
+          "default-team" = "read" # Overridden by settings
         }
       }
     }

@@ -63,13 +63,88 @@ module "github_governance" {
     dependency_graph_enabled_for_new_repositories                = true
     secret_scanning_enabled_for_new_repositories                 = true
     secret_scanning_push_protection_enabled_for_new_repositories = true
+
+    # Workflow Permissions - Security hardening for all repos by default
+    workflow_permissions = {
+      default_workflow_permissions = "read" # Restrictive by default
+      can_approve_pull_requests    = false  # Workflows cannot approve PRs
+    }
+  }
+
+  # Security Managers - Teams with security management capabilities
+  # Requires GitHub Team plan or higher
+  # NOTE: Teams must exist before being assigned as security managers
+  # Commented out for example - uncomment and replace with your actual team slugs
+  # security_managers = ["security-team", "appsec-team"]
+  security_managers = []
+
+  # Organization Roles - Custom organization-wide roles with fine-grained permissions
+  # Requires GitHub Enterprise Cloud
+  # Uncomment to create custom roles:
+  # organization_roles = {
+  #   "security-admin" = {
+  #     description = "Security administrators with audit and security configuration access"
+  #     base_role   = "read"
+  #     permissions = ["read_audit_logs", "manage_organization_security"]
+  #   }
+  #   "billing-viewer" = {
+  #     description = "View organization billing and usage data"
+  #     base_role   = "read"
+  #     permissions = ["read_organization_billing"]
+  #   }
+  # }
+
+  # Organization Role Assignments - Assign roles to users and teams
+  # Requires GitHub Enterprise Cloud
+  # Supports both custom roles (by name) and predefined roles (by ID: 8132-8136)
+  # Uncomment to assign roles:
+  # organization_role_assignments = {
+  #   users = {
+  #     "security-admin" = ["security-lead-user"]
+  #     "billing-viewer" = ["finance-user"]
+  #   }
+  #   teams = {
+  #     "security-admin" = ["security-team"]
+  #     "billing-viewer" = ["finance-team"]
+  #   }
+  # }
+
+  # Custom Properties Schema - Organization-wide metadata
+  # Requires GitHub Enterprise Cloud
+  custom_properties_schema = {
+    "cost_center" = {
+      description    = "Cost center for billing allocation"
+      value_type     = "single_select"
+      required       = true
+      allowed_values = ["engineering", "sales", "marketing", "operations"]
+      default_value  = "engineering"
+    }
+    "team_owner" = {
+      description   = "Team responsible for this repository"
+      value_type    = "string"
+      required      = true
+      default_value = "unassigned" # Required for string type properties that are required
+    }
+    "compliance_level" = {
+      description    = "Required compliance level"
+      value_type     = "single_select"
+      required       = false
+      allowed_values = ["sox", "pci", "hipaa", "none"]
+      # NOTE: optional properties cannot have default_value
+    }
+    "data_classification" = {
+      description    = "Data sensitivity classification"
+      value_type     = "single_select"
+      required       = true
+      allowed_values = ["public", "internal", "confidential", "restricted"]
+      default_value  = "internal"
+    }
   }
 
   # Repositories with varied configurations
   repositories = {
     # Public repository - Open source project
     "public-library" = {
-      alias        = "public-lib"
       description  = "Open source library with full features"
       visibility   = "public"
       homepage_url = "https://example.com/public-library"
@@ -98,7 +173,7 @@ module "github_governance" {
       }
     }
 
-    # Private repository - Internal project
+    # Private repository - Internal project with custom properties
     "private-api" = {
       description = "Internal API service"
       visibility  = "private"
@@ -128,6 +203,20 @@ module "github_governance" {
       merge_commit_message        = "PR_TITLE"
       squash_merge_commit_title   = "COMMIT_OR_PR_TITLE"
       squash_merge_commit_message = "COMMIT_MESSAGES"
+
+      # Custom Properties - Metadata for governance
+      custom_properties = {
+        cost_center         = "engineering"
+        team_owner          = "backend-team"
+        compliance_level    = "sox"
+        data_classification = "confidential"
+      }
+
+      # Workflow Permissions - More permissive for CI/CD workflows
+      workflow_permissions = {
+        default_workflow_permissions = "write" # Workflows need write access
+        can_approve_pull_requests    = false   # Still can't approve PRs
+      }
     }
 
     # Internal tools repository

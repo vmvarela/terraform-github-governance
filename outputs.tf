@@ -55,6 +55,31 @@ output "custom_role_ids" {
   }
 }
 
+output "organization_role_ids" {
+  description = "Map of custom organization role names to their role IDs (Enterprise Cloud only)"
+  value = {
+    for name, role in github_organization_role.this : name => role.role_id
+  }
+}
+
+output "security_manager_teams" {
+  description = "List of team slugs configured as security managers"
+  value       = var.mode == "organization" ? var.security_managers : []
+}
+
+output "custom_properties" {
+  description = "Map of custom property names to their configuration"
+  value = var.mode == "organization" ? {
+    for name, prop in var.custom_properties_schema : name => {
+      value_type     = prop.value_type
+      required       = try(prop.required, false)
+      description    = try(prop.description, null)
+      default_value  = try(prop.default_value, null)
+      allowed_values = try(prop.allowed_values, null)
+    }
+  } : {}
+}
+
 output "ruleset_ids" {
   description = "Map of organization ruleset names to their IDs"
   value = {
@@ -138,16 +163,21 @@ output "runner_groups_summary" {
 output "governance_summary" {
   description = "Complete governance posture summary"
   value = {
-    mode                   = var.mode
-    organization           = local.github_org
-    plan                   = local.github_plan
-    repositories_managed   = length(github_repository.repo)
-    runner_groups          = length(github_actions_runner_group.this)
-    organization_webhooks  = length(try(github_organization_webhook.this, {}))
-    organization_rulesets  = length(github_organization_ruleset.this)
-    custom_roles           = length(github_organization_custom_role.this)
-    organization_variables = length(github_actions_organization_variable.this)
-    organization_secrets   = length(github_actions_organization_secret.encrypted) + length(github_actions_organization_secret.plaintext)
-    dependabot_secrets     = length(github_dependabot_organization_secret.encrypted) + length(github_dependabot_organization_secret.plaintext)
+    mode                      = var.mode
+    organization              = local.github_org
+    plan                      = local.github_plan
+    repositories_managed      = length(github_repository.repo)
+    runner_groups             = length(github_actions_runner_group.this)
+    organization_webhooks     = length(try(github_organization_webhook.this, {}))
+    organization_rulesets     = length(github_organization_ruleset.this)
+    custom_repository_roles   = length(github_organization_custom_role.this)
+    custom_organization_roles = length(github_organization_role.this)
+    organization_variables    = length(github_actions_organization_variable.this)
+    organization_secrets      = length(github_actions_organization_secret.encrypted) + length(github_actions_organization_secret.plaintext)
+    dependabot_secrets        = length(github_dependabot_organization_secret.encrypted) + length(github_dependabot_organization_secret.plaintext)
+    security_manager_teams    = length(var.security_managers)
+    custom_properties         = length(var.custom_properties_schema)
+    role_user_assignments     = length(local.organization_role_user_assignments)
+    role_team_assignments     = length(local.organization_role_team_assignments)
   }
 }
