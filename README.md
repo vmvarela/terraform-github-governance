@@ -2,7 +2,7 @@
 
 [![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.6-623CE4?logo=terraform)](https://www.terraform.io)
 [![GitHub Provider](https://img.shields.io/badge/provider-github%20~%3E%206.0-181717?logo=github)](https://registry.terraform.io/providers/integrations/github/latest)
-[![Tests](https://img.shields.io/badge/tests-119%20passed-success?logo=terraform)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-14%20passed-success?logo=terraform)](./tests/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
 
