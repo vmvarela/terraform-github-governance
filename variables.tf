@@ -1,235 +1,147 @@
-variable "mode" {
-  description = "Governance mode: 'project' or 'organization'"
+# --- 1. Organization ---
+
+variable "organization" {
   type        = string
-  default     = "project"
+  description = "GitHub organization name where repositories will be created."
+}
+
+# --- 2. workspace ---
+
+variable "workspace" {
+  type        = string
+  description = "workspace/namespace name for logical grouping of repositories. Will be stored as a custom property on each repository."
+}
+
+# --- 3. Naming Pattern ---
+
+variable "repository_naming" {
+  type        = string
+  description = "sprintf-style format string for repository names. Use a single '%s' placeholder for the repository key. Example: '%s' (no prefix), 'myorg-%s' (with prefix)."
+  default     = "%s"
+
   validation {
-    condition     = contains(["project", "organization"], var.mode)
-    error_message = "Possible values for mode are 'project' or 'organization'."
+    condition     = can(regex("^[^%]*%s[^%]*$", var.repository_naming))
+    error_message = "repository_naming must contain exactly one '%s' placeholder for the repository key."
   }
 }
 
-variable "name" {
-  description = "The ID of the project/organization."
-  type        = string
-}
-
-variable "defaults" {
-  description = "Repositories default configuration (if empty)"
-  type        = any
-  default     = {}
-}
-
-variable "settings" {
-  description = "Repositories fixed common configuration (cannot be overwritten)"
-  type        = any
-  default     = {}
-}
-
-# se incluye en todos los repositorios, en modo organization es un role_assigment de organization
-variable "teams" {
-  description = "The list of collaborators (teams) of all repositories, and their role"
-  type        = map(string)
-  default     = {}
-}
-
-# se incluye en todos los repositorios (se crea un team por role para reducir recursos)
-# hay un team basico con el nombre del proyecto y permiso 'read' y por cada role adicional se crea por debajo
-# devops --> role-devops-write, role-devops-admin
-# en modo organization es un role_assigment de organization
-variable "users" {
-  description = "The list of collaborators (users) of all repositories, and their role"
-  type        = map(string)
-  default     = {}
-}
+# --- 4. Repositories ---
 
 variable "repositories" {
-  description = "Repositories"
-  type        = any
-  default     = {}
-}
-
-variable "info_organization" {
-  description = "Info about the organization. If not provided, they will be fetched by the module."
-  type        = any
-  default     = null
-}
-
-variable "info_repositories" {
-  description = "All repositories in the organization. If not provided, they will be fetched by the module."
-  type        = any
-  default     = null
-}
-
-variable "github_org" {
-  description = "GitHub organization name"
-  type        = string
-  default     = null
-}
-
-variable "spec" {
-  description = "Format specification for repository names (i.e \"prefix-%s\")"
-  type        = string
-  default     = null
-  validation {
-    condition     = var.mode == "project" ? var.spec != "%s" : true
-    error_message = "In project mode, spec cannot be '%s'."
-  }
-}
-
-variable "variables" {
-  description = "Organization/Project common variables to set"
-  type        = map(string)
-  default     = null
-}
-
-variable "secrets" {
-  description = "Organization/Project common plaintext secrets to set"
-  type        = map(string)
-  default     = null
-}
-
-variable "secrets_encrypted" {
-  description = "Organization/Project common encrypted secrets to set"
-  type        = map(string)
-  default     = null
-}
-
-variable "dependabot_secrets" {
-  description = "Organization/Project common Dependabot plaintext secrets to set"
-  type        = map(string)
-  default     = null
-}
-
-variable "dependabot_secrets_encrypted" {
-  description = "Organization/Project common Dependabot encrypted secrets to set"
-  type        = map(string)
-  default     = null
-}
-
-variable "dependabot_copy_secrets" {
-  description = "Copy secrets from organization to repositories for Dependabot"
-  type        = bool
-  default     = false
-}
-
-variable "rulesets" {
-  description = "Organization/Project rules"
   type = map(object({
-    enforcement = optional(string, "active")
-    rules = optional(object({
-      branch_name_pattern = optional(object({
-        operator = optional(string)
-        pattern  = optional(string)
-        name     = optional(string)
-        negate   = optional(bool)
-      }))
-      commit_author_email_pattern = optional(object({
-        operator = optional(string)
-        pattern  = optional(string)
-        name     = optional(string)
-        negate   = optional(bool)
-      }))
-      commit_message_pattern = optional(object({
-        operator = optional(string)
-        pattern  = optional(string)
-        name     = optional(string)
-        negate   = optional(bool)
-      }))
-      committer_email_pattern = optional(object({
-        operator = optional(string)
-        pattern  = optional(string)
-        name     = optional(string)
-        negate   = optional(bool)
-      }))
-      creation         = optional(bool)
-      deletion         = optional(bool)
-      non_fast_forward = optional(bool)
-      pull_request = optional(object({
-        dismiss_stale_reviews_on_push     = optional(bool)
-        require_code_owner_review         = optional(bool)
-        require_last_push_approval        = optional(bool)
-        required_approving_review_count   = optional(number)
-        required_review_thread_resolution = optional(bool)
-      }))
-      required_workflows = optional(list(object({
-        repository = string
-        path       = string
-        ref        = optional(string)
-      })))
-      required_linear_history              = optional(bool)
-      required_signatures                  = optional(bool)
-      required_status_checks               = optional(map(string))
-      strict_required_status_checks_policy = optional(bool)
-      tag_name_pattern = optional(object({
-        operator = optional(string)
-        pattern  = optional(string)
-        name     = optional(string)
-        negate   = optional(bool)
-      }))
-      update = optional(bool)
+    # Optional preset to apply (defaults to "default")
+    preset = optional(string, "default")
+
+    # Optional explicit name (allows renaming without Terraform recreation)
+    name = optional(string)
+
+    # Core configuration (can override preset)
+    description    = optional(string)
+    visibility     = optional(string)
+    default_branch = optional(string)
+    topics         = optional(list(string))
+    properties     = optional(map(string))
+
+    # Template
+    is_template = optional(bool)
+    template = optional(object({
+      repository           = string
+      include_all_branches = optional(bool, false)
     }))
-    target = optional(string, "branch")
-    bypass_actors = optional(map(object({
-      actor_type  = string
-      bypass_mode = string
+
+    # Access & Permissions
+    permissions = optional(map(string))
+    deploy_keys = optional(map(object({
+      key       = string
+      read_only = optional(bool, false)
     })))
-    include      = optional(list(string), [])
-    exclude      = optional(list(string), [])
-    repositories = optional(list(string))
+    allowed_roles = optional(list(string))
+
+    # Automation (Global)
+    webhooks = optional(map(object({
+      url    = string
+      events = list(string)
+      secret = optional(string)
+    })))
+    repository_secrets = optional(map(object({
+      value     = string
+      sensitive = optional(bool, true)
+    })))
+    repository_variables = optional(map(string))
+
+    # CI/CD Environments
+    environments = optional(map(object({
+      required_approvers = optional(list(string), [])
+      secrets            = optional(map(string))
+      variables          = optional(map(string))
+    })))
+
+    # Branch Protection (flattened overrides)
+    protected_branches      = optional(list(string))
+    allow_bypass            = optional(list(string))
+    required_approvals      = optional(number)
+    required_checks         = optional(list(string))
+    prevent_force_push      = optional(bool)
+    prevent_branch_deletion = optional(bool)
   }))
-  default = {}
+  description = "Map of repositories to create. The map key is a stable identifier (won't trigger recreation). Use 'name' field to rename repositories safely."
+
   validation {
-    condition     = alltrue([for name, config in(var.rulesets == null ? {} : var.rulesets) : contains(["active", "evaluate", "disabled"], config.enforcement)])
-    error_message = "Possible values for enforcement are active, evaluate or disabled."
+    condition = alltrue([
+      for k, v in var.repositories :
+      can(regex("^[a-z0-9_-]+$", k))
+    ])
+    error_message = "Repository map keys must contain only lowercase letters, numbers, underscores, and hyphens."
   }
+
   validation {
-    condition     = alltrue([for name, config in(var.rulesets == null ? {} : var.rulesets) : contains(["tag", "branch"], config.target)])
-    error_message = "Possible values for ruleset target are tag or branch"
+    condition = alltrue([
+      for k, v in var.repositories : contains(keys(var.presets), try(v.preset, "default"))
+    ])
+    error_message = "Each repository preset must exist as a key in var.presets (missing or invalid preset)."
   }
 }
 
-variable "runner_groups" {
-  description = "The list of runner groups of the organization/project (key: runner_group_name)"
+# --- 5. Presets ---
+
+variable "presets" {
   type = map(object({
-    visibility                = optional(string, "all")
-    workflows                 = optional(set(string))
-    repositories              = optional(set(string), [])
-    allow_public_repositories = optional(bool)
+    visibility              = optional(string)
+    default_branch          = optional(string)
+    topics                  = optional(list(string), [])
+    properties              = optional(map(string), {})
+    protected_branches      = optional(list(string))
+    allow_bypass            = optional(list(string), [])
+    required_approvals      = optional(number)
+    required_checks         = optional(list(string))
+    prevent_force_push      = optional(bool)
+    prevent_branch_deletion = optional(bool)
   }))
-  default = {}
-  validation {
-    condition     = var.runner_groups == null || length(var.runner_groups) == 0 || alltrue([for rg, config in(var.runner_groups == null ? {} : var.runner_groups) : contains(["all", "private", "selected"], config.visibility)])
-    error_message = "Possible values for visibility are `all`, `private` or `selected`."
+  description = "Preset configurations map. Select with repositories[*].preset; falls back to 'default'."
+  default = {
+    default = {}
   }
 }
 
-variable "repository_roles" {
-  description = "The list of custom roles of the organization (key: role_name)"
-  type = map(object({
-    description = optional(string)
-    base_role   = string
-    permissions = set(string)
-  }))
-  default = {}
-  validation {
-    condition     = alltrue([for role, config in(var.repository_roles == null ? {} : var.repository_roles) : contains(["read", "triage", "write", "maintain"], config.base_role)])
-    error_message = "Possible values for base_role are read, triage, write or maintain."
-  }
+# --- 6. Performance Optimization ---
+
+variable "github_team_ids" {
+  type        = map(number)
+  description = "Optional map of team slug -> team ID. If empty, fetches all organization teams via data source. Used for branch protection bypass actors and environment reviewers."
+  default     = {}
+  # Example: { "sre" = 12345, "platform" = 67890 }
 }
 
-variable "webhooks" {
-  description = "The list of webhooks of the organization. NOTE: Organization webhooks require GitHub Team or Enterprise plan. GitHub Free organizations will receive a 404 error. Use repository-level webhooks for Free plans."
-  type = map(object({
-    active       = optional(bool, true)
-    url          = string
-    content_type = string
-    insecure_ssl = optional(bool, false)
-    secret       = optional(string, null)
-    events       = list(string)
-  }))
-  default = {}
-  validation {
-    condition     = alltrue([for webhook, config in(coalesce(var.webhooks, {})) : contains(["form", "json"], config.content_type)])
-    error_message = "Possible values for content_type are 'form' or 'json'."
-  }
+variable "github_user_ids" {
+  type        = map(number)
+  description = "Optional map of user login -> numeric user ID. If empty, repository module resolves IDs individually via data source (less efficient). Used for environment reviewers. Cannot be auto-fetched org-wide as GitHub API returns node IDs (strings) not numeric IDs."
+  default     = {}
+  # Example: { "alice" = 111, "bob" = 222 }
+}
+
+variable "github_app_ids" {
+  type        = map(number)
+  description = "Optional map of app slug -> app installation ID. If empty, fetches apps individually via data source. Used for branch protection bypass actors."
+  default     = {}
+  # Example: { "renovate" = 333, "dependabot" = 444 }
 }
