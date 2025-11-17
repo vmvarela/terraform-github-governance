@@ -42,13 +42,13 @@ locals {
 
 # Fetch user data for referenced users (only if not provided)
 data "github_user" "referenced_users" {
-  for_each = length(var.github_user_ids) == 0 ? toset(local.all_user_logins) : []
+  for_each = length(var.github_user_ids) == 0 ? toset(local.all_user_logins) : toset([])
   username = each.value
 }
 
 # Fetch app installation data for referenced apps (only if not provided)
 data "github_app" "bypass_apps" {
-  for_each = length(var.github_app_ids) == 0 ? toset(local.bypass_app_slugs) : []
+  for_each = length(var.github_app_ids) == 0 ? toset(local.bypass_app_slugs) : toset([])
   slug     = each.value
 }
 
