@@ -21,18 +21,6 @@ locals {
     ]
   ])
 
-  # Distinct union only when IDs map is empty
-  all_team_slugs = length(var.github_team_ids) == 0 ? toset(distinct(concat(local.bypass_team_slugs, local.env_team_slugs))) : []
-
-  # Distinct user logins - only when IDs map is empty
-  all_user_logins = length(var.github_user_ids) == 0 ? toset(distinct(local.env_user_logins)) : []
-
-  # App slugs from allow_bypass actors
-  app_names_to_lookup = length(var.github_app_ids) == 0 ? toset([
-    for actor in var.allow_bypass : split(":", actor)[1]
-    if startswith(actor, "app:")
-  ]) : []
-
   # Build sorted list of bypass actors with resolved IDs for consistent ordering
   bypass_actors_with_ids = [
     for actor in var.allow_bypass : {
@@ -41,17 +29,9 @@ locals {
         actor == "org-admin" ? 1 :
         actor == "role:maintain" ? 2 :
         actor == "role:write" ? 4 :
-        actor == "org-admin" ? 1 :
-        startswith(actor, "team:") ? (
-          length(var.github_team_ids) > 0 ?
-          var.github_team_ids[split(":", actor)[1]] :
-          data.github_team.referenced_teams[split(":", actor)[1]].id
-        ) :
-        startswith(actor, "app:") ? (
-          length(var.github_app_ids) > 0 ?
-          var.github_app_ids[split(":", actor)[1]] :
-          data.github_app.bypass_apps[split(":", actor)[1]].id
-        ) : 0
+        startswith(actor, "team:") ? var.github_team_ids[split(":", actor)[1]] :
+        startswith(actor, "app:") ? var.github_app_ids[split(":", actor)[1]] :
+        0
       )
       actor_type = (
         actor == "org-admin" ? "OrganizationAdmin" :
@@ -103,22 +83,6 @@ locals {
   )
 }
 
-# Data sources - only executed if the corresponding variable is null
-data "github_team" "referenced_teams" {
-  for_each = local.all_team_slugs
-  slug     = each.value
-}
-
-data "github_user" "referenced_users" {
-  for_each = local.all_user_logins
-  username = each.value
-}
-
-data "github_app" "bypass_apps" {
-  for_each = local.app_names_to_lookup
-  slug     = each.value
-}
-
 resource "github_repository" "this" {
   name        = var.name
   description = var.description
@@ -127,39 +91,39 @@ resource "github_repository" "this" {
   topics      = var.topics
   is_template = var.is_template
 
-  # Validate that all referenced teams exist
+  # Validate that all referenced teams, users and apps are provided by the parent module
   lifecycle {
     precondition {
       condition = alltrue([
         for slug in concat(local.bypass_team_slugs, local.env_team_slugs) :
-        contains(keys(var.github_team_ids), slug) || contains(keys(data.github_team.referenced_teams), slug)
+        contains(keys(var.github_team_ids), slug)
       ])
-      error_message = "Some team slugs are not found. Missing: ${join(", ", [
+      error_message = "Some team slugs are not provided. Missing: ${join(", ", [
         for slug in concat(local.bypass_team_slugs, local.env_team_slugs) :
-        slug if !contains(keys(var.github_team_ids), slug) && !contains(keys(data.github_team.referenced_teams), slug)
-      ])}. Ensure teams exist in GitHub or provide them in github_team_ids variable."
+        slug if !contains(keys(var.github_team_ids), slug)
+      ])}. Parent module must provide all team IDs in github_team_ids variable."
     }
 
     precondition {
       condition = alltrue([
         for login in local.env_user_logins :
-        contains(keys(var.github_user_ids), login) || contains(keys(data.github_user.referenced_users), login)
+        contains(keys(var.github_user_ids), login)
       ])
-      error_message = "Some user logins are not found. Missing: ${join(", ", [
+      error_message = "Some user logins are not provided. Missing: ${join(", ", [
         for login in local.env_user_logins :
-        login if !contains(keys(var.github_user_ids), login) && !contains(keys(data.github_user.referenced_users), login)
-      ])}. Ensure users exist in GitHub or provide them in github_user_ids variable."
+        login if !contains(keys(var.github_user_ids), login)
+      ])}. Parent module must provide all user IDs in github_user_ids variable."
     }
 
     precondition {
       condition = alltrue([
         for slug in [for actor in var.allow_bypass : split(":", actor)[1] if startswith(actor, "app:")] :
-        contains(keys(var.github_app_ids), slug) || contains(keys(data.github_app.bypass_apps), slug)
+        contains(keys(var.github_app_ids), slug)
       ])
-      error_message = "Some app slugs are not found. Missing: ${join(", ", [
+      error_message = "Some app slugs are not provided. Missing: ${join(", ", [
         for slug in [for actor in var.allow_bypass : split(":", actor)[1] if startswith(actor, "app:")] :
-        slug if !contains(keys(var.github_app_ids), slug) && !contains(keys(data.github_app.bypass_apps), slug)
-      ])}. Ensure apps are installed in the organization or provide them in github_app_ids variable."
+        slug if !contains(keys(var.github_app_ids), slug)
+      ])}. Parent module must provide all app IDs in github_app_ids variable."
     }
   }
 
@@ -272,22 +236,14 @@ resource "github_repository_environment" "env" {
     ]) > 0 ? [1] : []
     content {
       teams = [
-        for a in lookup(each.value, "required_approvers", []) : (
-          startswith(a, "team:") ? (
-            length(var.github_team_ids) > 0 ?
-            var.github_team_ids[split(":", a)[1]] :
-            data.github_team.referenced_teams[split(":", a)[1]].id
-          ) : null
-        ) if startswith(a, "team:")
+        for a in lookup(each.value, "required_approvers", []) :
+        var.github_team_ids[split(":", a)[1]]
+        if startswith(a, "team:")
       ]
       users = [
-        for a in lookup(each.value, "required_approvers", []) : (
-          startswith(a, "user:") ? (
-            length(var.github_user_ids) > 0 ?
-            var.github_user_ids[split(":", a)[1]] :
-            data.github_user.referenced_users[split(":", a)[1]].id
-          ) : null
-        ) if startswith(a, "user:")
+        for a in lookup(each.value, "required_approvers", []) :
+        var.github_user_ids[split(":", a)[1]]
+        if startswith(a, "user:")
       ]
     }
   }
