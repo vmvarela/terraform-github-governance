@@ -7,7 +7,7 @@ data "github_organization_teams" "all" {
   summary_only    = false
 }
 
-# Extract unique app slugs from allow_bypass for selective fetch
+# Extract unique app slugs and user logins from repositories for selective fetch
 locals {
   all_bypass_entries = flatten([
     for k, repo in var.repositories : concat(
@@ -20,11 +20,35 @@ locals {
     for entry in local.all_bypass_entries : trimprefix(entry, "app:")
     if startswith(entry, "app:")
   ])
+
+  # Extract user logins from permissions and environment reviewers
+  all_user_logins = distinct(flatten([
+    for k, repo in var.repositories : concat(
+      # From permissions
+      [
+        for perm_key in keys(coalesce(repo.permissions, {})) : split(":", perm_key)[1]
+        if startswith(perm_key, "user:")
+      ],
+      # From environment required_approvers
+      flatten([
+        for env in values(coalesce(repo.environments, {})) : [
+          for approver in coalesce(env.required_approvers, []) : split(":", approver)[1]
+          if startswith(approver, "user:")
+        ]
+      ])
+    )
+  ]))
+}
+
+# Fetch user data for referenced users (only if not provided)
+data "github_user" "referenced_users" {
+  for_each = length(var.github_user_ids) == 0 ? toset(local.all_user_logins) : toset([])
+  username = each.value
 }
 
 # Fetch app installation data for referenced apps (only if not provided)
 data "github_app" "bypass_apps" {
-  for_each = length(var.github_app_ids) == 0 ? toset(local.bypass_app_slugs) : []
+  for_each = length(var.github_app_ids) == 0 ? toset(local.bypass_app_slugs) : toset([])
   slug     = each.value
 }
 
@@ -35,9 +59,11 @@ locals {
     team.slug => team.id
   }
 
-  # Note: User IDs must be provided manually or resolved individually by repository module
-  # Cannot fetch from data.github_organization.members as it returns node IDs (strings), not numeric IDs
-  github_user_ids = var.github_user_ids
+  # Build user ID map from individual user data sources
+  github_user_ids = length(var.github_user_ids) > 0 ? var.github_user_ids : {
+    for login, user in data.github_user.referenced_users :
+    login => user.id
+  }
 
   github_app_ids = length(var.github_app_ids) > 0 ? var.github_app_ids : {
     for slug, app in data.github_app.bypass_apps : slug => app.id

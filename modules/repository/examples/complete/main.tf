@@ -13,6 +13,32 @@ provider "github" {
   token = var.github_token
 }
 
+# Data sources to resolve team/user/app IDs
+# Note: In production, the parent governance module handles this centrally
+data "github_team" "sre" {
+  slug = "sre"
+}
+
+data "github_team" "developers" {
+  slug = "developers"
+}
+
+data "github_team" "security_ops" {
+  slug = "security-ops"
+}
+
+locals {
+  # Build ID maps from data sources
+  github_team_ids = {
+    sre          = data.github_team.sre.id
+    developers   = data.github_team.developers.id
+    security-ops = data.github_team.security_ops.id
+  }
+
+  github_user_ids = {} # Add users if needed
+  github_app_ids  = {} # Add apps if needed
+}
+
 # Example: Production repository with comprehensive configuration
 module "production_api" {
   source = "../../"
@@ -104,6 +130,11 @@ module "production_api" {
       secret = var.ci_webhook_secret
     }
   }
+
+  # Required: IDs must be provided
+  github_team_ids = local.github_team_ids
+  github_user_ids = local.github_user_ids
+  github_app_ids  = local.github_app_ids
 }
 
 # Example: Public library repository
@@ -134,6 +165,11 @@ module "open_source_library" {
   repository_secrets = {
     NPM_TOKEN = var.npm_publish_token
   }
+
+  # Required: IDs must be provided
+  github_team_ids = local.github_team_ids
+  github_user_ids = local.github_user_ids
+  github_app_ids  = local.github_app_ids
 }
 
 # Example: Template repository
@@ -159,6 +195,11 @@ module "service_template" {
   required_approvals = 1
   required_checks    = ["test", "lint"]
   prevent_force_push = true
+
+  # Required: IDs must be provided
+  github_team_ids = local.github_team_ids
+  github_user_ids = local.github_user_ids
+  github_app_ids  = local.github_app_ids
 }
 
 # Example: Repository created from template
@@ -180,6 +221,11 @@ module "new_service_from_template" {
   required_approvals = 2
   required_checks    = ["ci", "security-scan"]
   prevent_force_push = true
+
+  # Required: IDs must be provided
+  github_team_ids = local.github_team_ids
+  github_user_ids = local.github_user_ids
+  github_app_ids  = local.github_app_ids
 
   depends_on = [module.service_template]
 }
