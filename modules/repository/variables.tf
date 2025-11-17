@@ -214,7 +214,7 @@ variable "prevent_branch_deletion" {
 variable "github_team_ids" {
   type        = map(number)
   description = "Map of team slug -> team ID. Required for branch bypass actors and environment reviewers. Must be provided by parent governance module."
-  default     = null
+  default     = {}
   # Example: { "sre" = 12345, "platform" = 67890 }
 }
 
