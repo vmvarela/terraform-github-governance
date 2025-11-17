@@ -213,21 +213,21 @@ variable "prevent_branch_deletion" {
 
 variable "github_team_ids" {
   type        = map(number)
-  description = "Optional map of team slug -> team ID used for both allow_bypass team actors and environment required_approvers team actors. If not provided, uses empty map (must be provided by parent module)."
-  default     = null
+  description = "Map of team slug -> team ID. Required for branch bypass actors and environment reviewers. Must be provided by parent governance module."
+  default     = {}
   # Example: { "sre" = 12345, "platform" = 67890 }
 }
 
 variable "github_user_ids" {
   type        = map(number)
-  description = "Optional map of user login -> user ID used for environment required_approvers user actors. If not provided, module fetches user IDs via data source."
+  description = "Map of user login -> user ID. Required for environment reviewers. Must be provided by parent governance module."
   default     = {}
   # Example: { "alice" = 111, "bob" = 222 }
 }
 
 variable "github_app_ids" {
   type        = map(number)
-  description = "Optional map of app slug -> app installation ID. If empty, fetches apps individually via data source. Used for branch protection bypass actors."
+  description = "Map of app slug -> app installation ID. Required for branch bypass app actors. Must be provided by parent governance module."
   default     = {}
   # Example: { "renovate" = 333, "dependabot" = 444 }
 }

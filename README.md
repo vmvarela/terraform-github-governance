@@ -14,7 +14,7 @@ A Terraform module for managing GitHub repositories at scale with configurable p
 - **Standardized Naming**: Apply organization-wide naming patterns with `repository_naming`
 - **Safe Renaming**: Rename repositories without Terraform resource recreation
 - **Branch Protection**: Flat, intuitive configuration with automatic code owner review enforcement
-- **Performance Optimization**: Pre-fetches team and app IDs to avoid repeated GitHub API calls
+- **Performance Optimization**: Central ID resolution - governance module pre-fetches all team/user/app IDs once and passes them to repository instances, eliminating duplicate API calls
 - **Hierarchical Architecture**: Governance module orchestrates repository submodule for clean separation
 
 ## Module Structure
@@ -373,3 +373,54 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 ---
 
 **Made with ❤️ by [Victor Varela](https://github.com/vmvarela)**
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
+| <a name="requirement_github"></a> [github](#requirement\_github) | ~> 6.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_github"></a> [github](#provider\_github) | 6.8.2 |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_repositories"></a> [repositories](#module\_repositories) | ./modules/repository | n/a |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [github_app.bypass_apps](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/app) | data source |
+| [github_organization_teams.all](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/organization_teams) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_github_app_ids"></a> [github\_app\_ids](#input\_github\_app\_ids) | Optional map of app slug -> app installation ID. If empty, fetches apps individually via data source. Used for branch protection bypass actors. | `map(number)` | `{}` | no |
+| <a name="input_github_team_ids"></a> [github\_team\_ids](#input\_github\_team\_ids) | Optional map of team slug -> team ID. If empty, fetches all organization teams via data source. Used for branch protection bypass actors and environment reviewers. | `map(number)` | `{}` | no |
+| <a name="input_github_user_ids"></a> [github\_user\_ids](#input\_github\_user\_ids) | Optional map of user login -> numeric user ID. If empty, repository module resolves IDs individually via data source (less efficient). Used for environment reviewers. Cannot be auto-fetched org-wide as GitHub API returns node IDs (strings) not numeric IDs. | `map(number)` | `{}` | no |
+| <a name="input_organization"></a> [organization](#input\_organization) | GitHub organization name where repositories will be created. | `string` | n/a | yes |
+| <a name="input_presets"></a> [presets](#input\_presets) | Preset configurations map. Select with repositories[*].preset; falls back to 'default'. | <pre>map(object({<br/>    visibility              = optional(string)<br/>    default_branch          = optional(string)<br/>    topics                  = optional(list(string), [])<br/>    properties              = optional(map(string), {})<br/>    protected_branches      = optional(list(string))<br/>    allow_bypass            = optional(list(string), [])<br/>    required_approvals      = optional(number)<br/>    required_checks         = optional(list(string))<br/>    prevent_force_push      = optional(bool)<br/>    prevent_branch_deletion = optional(bool)<br/>  }))</pre> | <pre>{<br/>  "default": {}<br/>}</pre> | no |
+| <a name="input_repositories"></a> [repositories](#input\_repositories) | Map of repositories to create. The map key is a stable identifier (won't trigger recreation). Use 'name' field to rename repositories safely. | <pre>map(object({<br/>    # Optional preset to apply (defaults to "default")<br/>    preset = optional(string, "default")<br/><br/>    # Optional explicit name (allows renaming without Terraform recreation)<br/>    name = optional(string)<br/><br/>    # Core configuration (can override preset)<br/>    description    = optional(string)<br/>    visibility     = optional(string)<br/>    default_branch = optional(string)<br/>    topics         = optional(list(string))<br/>    properties     = optional(map(string))<br/><br/>    # Template<br/>    is_template = optional(bool)<br/>    template = optional(object({<br/>      repository           = string<br/>      include_all_branches = optional(bool, false)<br/>    }))<br/><br/>    # Access & Permissions<br/>    permissions = optional(map(string))<br/>    deploy_keys = optional(map(object({<br/>      key       = string<br/>      read_only = optional(bool, false)<br/>    })))<br/>    allowed_roles = optional(list(string))<br/><br/>    # Automation (Global)<br/>    webhooks = optional(map(object({<br/>      url    = string<br/>      events = list(string)<br/>      secret = optional(string)<br/>    })))<br/>    repository_secrets = optional(map(object({<br/>      value     = string<br/>      sensitive = optional(bool, true)<br/>    })))<br/>    repository_variables = optional(map(string))<br/><br/>    # CI/CD Environments<br/>    environments = optional(map(object({<br/>      required_approvers = optional(list(string), [])<br/>      secrets            = optional(map(string))<br/>      variables          = optional(map(string))<br/>    })))<br/><br/>    # Branch Protection (flattened overrides)<br/>    protected_branches      = optional(list(string))<br/>    allow_bypass            = optional(list(string))<br/>    required_approvals      = optional(number)<br/>    required_checks         = optional(list(string))<br/>    prevent_force_push      = optional(bool)<br/>    prevent_branch_deletion = optional(bool)<br/>  }))</pre> | n/a | yes |
+| <a name="input_repository_naming"></a> [repository\_naming](#input\_repository\_naming) | sprintf-style format string for repository names. Use a single '%s' placeholder for the repository key. Example: '%s' (no prefix), 'myorg-%s' (with prefix). | `string` | `"%s"` | no |
+| <a name="input_workspace"></a> [workspace](#input\_workspace) | workspace/namespace name for logical grouping of repositories. Will be stored as a custom property on each repository. | `string` | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_organization"></a> [organization](#output\_organization) | The GitHub organization name. |
+| <a name="output_repositories"></a> [repositories](#output\_repositories) | Map of repository keys to their full output details from the repository module. |
+| <a name="output_repository_names"></a> [repository\_names](#output\_repository\_names) | Map of repository keys to their GitHub names. |
+| <a name="output_repository_urls"></a> [repository\_urls](#output\_repository\_urls) | Map of repository keys to their HTML URLs. |
+| <a name="output_workspace"></a> [workspace](#output\_workspace) | The workspace name applied to all repositories. |
+<!-- END_TF_DOCS -->
