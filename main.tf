@@ -102,9 +102,8 @@ module "repositories" {
   template    = each.value.template
 
   # Access & Permissions
-  permissions   = each.value.permissions
-  deploy_keys   = each.value.deploy_keys
-  allowed_roles = each.value.allowed_roles
+  permissions = each.value.permissions
+  deploy_keys = each.value.deploy_keys
 
   # Automation (Global)
   webhooks = each.value.webhooks
@@ -130,4 +129,7 @@ module "repositories" {
   github_team_ids = local.github_team_ids
   github_user_ids = local.github_user_ids
   github_app_ids  = local.github_app_ids
+
+  # Pre-fetched allowed roles (base + custom if detected)
+  allowed_roles = local.allowed_roles
 }
