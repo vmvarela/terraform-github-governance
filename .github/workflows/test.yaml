@@ -75,21 +75,12 @@ jobs:
       - name: Symlink OpenTofu to terraform (for tests/hooks)
         if: ${{ matrix.provider == 'opentofu' }}
         run: |
-          # If setup-opentofu provides TOFU_CLI_PATH, use it. Otherwise try common binary names.
-          if [ -n "${TOFU_CLI_PATH:-}" ] && [ -x "${TOFU_CLI_PATH}" ]; then
-            sudo ln -sf "${TOFU_CLI_PATH}" /usr/local/bin/terraform
-            sudo chmod +x /usr/local/bin/terraform || true
-          elif command -v opentofu >/dev/null 2>&1; then
-            sudo ln -sf "$(command -v opentofu)" /usr/local/bin/terraform
-          elif command -v tofu >/dev/null 2>&1; then
-            sudo ln -sf "$(command -v tofu)" /usr/local/bin/terraform
-          else
-            echo "OpenTofu binary not found; continuing without symlink"
-          fi
-          terraform --version || true
+          tofu --version
+          which tofu
+          ln -s $(which tofu) /usr/local/bin/terraform
+          terraform --version
 
       - name: Setup TFLint
-        if: ${{ matrix.provider == 'terraform' }}
         uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
@@ -104,9 +95,7 @@ jobs:
           sudo mv /tmp/terraform-docs /usr/local/bin/terraform-docs
           terraform-docs --version
 
-      - name: Pre-commit (Terraform only)
-        if: ${{ matrix.provider == 'terraform' }}
+      - name: Pre-commit
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
-          fail-on-changed: true
