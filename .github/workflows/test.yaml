@@ -95,24 +95,8 @@ jobs:
           sudo mv /tmp/terraform-docs /usr/local/bin/terraform-docs
           terraform-docs --version
 
-      - name: Debug terraform-docs (sanity checks)
-        run: |
-          echo "terraform-docs version: $(terraform-docs --version)"
-          echo "Running a small md generation check (non-fatal)"
-          # Some terraform-docs versions don't support --no-sort; fallback if flag is unsupported
-          terraform-docs md table --no-sort . || terraform-docs md table . || true
-
-      - name: Pre-commit (Terraform only)
-        if: ${{ matrix.provider == 'terraform' }}
+      - name: Pre-commit
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
           fail-on-changed: true
-
-      - name: OpenTofu core checks (when running OpenTofu)
-        if: ${{ matrix.provider == 'opentofu' }}
-        run: |
-          set -euo pipefail
-          terraform init -backend=false
-          terraform validate
-          terraform test
