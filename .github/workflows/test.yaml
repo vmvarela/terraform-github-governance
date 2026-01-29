@@ -45,6 +45,11 @@ jobs:
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
 
+      - name: Install terraform-docs
+        uses: terraform-docs/gh-action@v0.17.0
+        with:
+          version: v0.17.0
+
       - name: Pre-commit
         uses: pre-commit/action@v3.0.1
         with:
