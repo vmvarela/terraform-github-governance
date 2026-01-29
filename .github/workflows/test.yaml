@@ -9,6 +9,7 @@ on:
 env:
   TFLINT_VERSION: 'v0.54.0'
   TERRAFORM_VERSION: '1.11.1'
+  TERRAFORM_DOCS_VERSION: 'v0.20.0'
 
 jobs:
   test:
@@ -45,5 +46,24 @@ jobs:
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
 
+      - name: Install terraform-docs (download binary pinned)
+        run: |
+          set -euo pipefail
+          version="${TERRAFORM_DOCS_VERSION}"
+          echo "Installing terraform-docs ${version}"
+          curl -sSL "https://github.com/terraform-docs/terraform-docs/releases/download/${version}/terraform-docs-${version}-linux-amd64.tar.gz" -o /tmp/terraform-docs.tar.gz
+          tar -xzf /tmp/terraform-docs.tar.gz -C /tmp
+          sudo mv /tmp/terraform-docs /usr/local/bin/terraform-docs
+          terraform-docs --version
+
+      - name: Debug terraform-docs (sanity checks)
+        run: |
+          echo "terraform-docs version: $(terraform-docs --version)"
+          echo "Running a small md generation check (non-fatal)"
+          terraform-docs md table --no-sort . || true
+
       - name: Pre-commit
         uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
+          fail-on-changed: true
