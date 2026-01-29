@@ -48,5 +48,5 @@ jobs:
       - name: Pre-commit
         uses: pre-commit/action@v3.0.1
         with:
-          args: ['--all-files']
+          args: --all-files
           fail-on-changed: true
