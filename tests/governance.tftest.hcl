@@ -4,7 +4,6 @@ mock_provider "github" {
   mock_resource "github_repository" {
     defaults = {
       id             = "test-repo-id"
-      name           = "test-repo"
       full_name      = "test-org/test-repo"
       html_url       = "https://github.com/test-org/test-repo"
       ssh_clone_url  = "git@github.com:test-org/test-repo.git"

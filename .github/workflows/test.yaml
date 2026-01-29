@@ -8,13 +8,30 @@ on:
 
 env:
   TFLINT_VERSION: 'v0.54.0'
-  TERRAFORM_VERSION: '1.11.1'
   TERRAFORM_DOCS_VERSION: 'v0.20.0'
 
 jobs:
   test:
-    name: Test
-    runs-on: ${{ vars.CI_GITHUB_RUNNER || 'ubuntu-latest' }}
+    name: Test - ${{ matrix.provider }} ${{ matrix.version }}
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: terraform
+            version: 'latest'
+          - provider: terraform
+            version: '1.13.5'
+          - provider: terraform
+            version: '1.12.2'
+          - provider: opentofu
+            version: 'latest'
+          - provider: opentofu
+            version: '1.10.8'
+          - provider: opentofu
+            version: '1.9.4'
+          - provider: ghoten
+            version: 'latest'
     permissions:
       actions: read
       contents: read
@@ -36,10 +53,32 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Setup Terraform
+      - name: Setup Terraform (HashiCorp)
+        if: ${{ matrix.provider == 'terraform' }}
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_version: ${{ matrix.version }}
+
+      - name: Setup OpenTofu
+        if: ${{ matrix.provider == 'opentofu' }}
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ matrix.version }}
+
+      - name: Setup Ghoten
+        if: ${{ matrix.provider == 'ghoten' }}
+        uses: vmvarela/ghoten/actions/setup@master
+        with:
+          ghoten_version: ${{ matrix.version }}
+          alias: 'terraform'
+
+      - name: Symlink OpenTofu to terraform (for tests/hooks)
+        if: ${{ matrix.provider == 'opentofu' }}
+        run: |
+          tofu --version
+          which tofu
+          ln -s $(which tofu) /usr/local/bin/terraform
+          terraform --version
 
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v6
@@ -56,14 +95,7 @@ jobs:
           sudo mv /tmp/terraform-docs /usr/local/bin/terraform-docs
           terraform-docs --version
 
-      - name: Debug terraform-docs (sanity checks)
-        run: |
-          echo "terraform-docs version: $(terraform-docs --version)"
-          echo "Running a small md generation check (non-fatal)"
-          terraform-docs md table --no-sort . || true
-
       - name: Pre-commit
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
-          fail-on-changed: true
