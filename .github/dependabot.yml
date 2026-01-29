@@ -8,8 +8,6 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore: "
-    labels:
-      - "release/patch"
 
   # Terraform
   - package-ecosystem: "terraform"
@@ -18,8 +16,6 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore: "
-    labels:
-      - "release/patch"
 
   - package-ecosystem: "terraform"
     directory: "/examples/complete/"
@@ -27,8 +23,6 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore: "
-    labels:
-      - "release/patch"
 
   - package-ecosystem: "terraform"
     directory: "/examples/simple/"
@@ -36,5 +30,3 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore: "
-    labels:
-      - "release/patch"
