@@ -194,7 +194,7 @@ resource "github_actions_secret" "repo_secret" {
 
   repository      = github_repository.this.name
   secret_name     = each.key
-  plaintext_value = each.value
+  plaintext_value = each.value.value
 }
 
 # Repository variables

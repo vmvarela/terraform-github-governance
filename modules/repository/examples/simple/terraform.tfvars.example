@@ -45,7 +45,7 @@ webhooks = {
 }
 
 repository_secrets = {
-  # "CI_TOKEN" = "secret-value"
+  # "CI_TOKEN" = { value = "REPLACE_WITH_CI_TOKEN (use env var or GitHub Actions secret)", sensitive = true }
 }
 
 repository_variables = {

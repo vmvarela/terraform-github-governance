@@ -128,8 +128,11 @@ variable "webhooks" {
 }
 
 variable "repository_secrets" {
-  type        = map(string)
-  description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values contain the secret value (sensitive) and optional sensitivity flag."
+  type = map(object({
+    value     = string
+    sensitive = optional(bool, true)
+  }))
+  description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values are objects: { value = string, sensitive = optional(bool, true) }."
   default     = {}
 }
 
