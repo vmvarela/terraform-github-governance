@@ -1,20 +1,18 @@
 name: Pull Request Labeler
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
 
-permissions:
-  issues: write
-  pull-requests: write
+on: [pull_request_target]
 
 jobs:
   label:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
 
-      - name: Label by changed files
-        uses: actions/labeler@v6
-        with:
-          configuration-path: .github/labeler.yml
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - uses: actions/labeler@v6
+      with:
+        # Token de autenticación de GitHub necesario para la acción
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        sync-labels: true
