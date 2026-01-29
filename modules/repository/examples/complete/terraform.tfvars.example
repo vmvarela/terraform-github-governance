@@ -1,5 +1,6 @@
 # GitHub Provider Configuration
-github_token = "ghp_YOUR_GITHUB_TOKEN_HERE"
+# DO NOT COMMIT SECRETS into repository. Use environment variables or GitHub Actions secrets.
+github_token = "REPLACE_WITH_GITHUB_TOKEN (use env var or GitHub Actions secret)"
 
 # Organization
 organization = "your-organization"
@@ -7,19 +8,24 @@ organization = "your-organization"
 # CI/CD Configuration
 ci_deploy_key     = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-ci-deploy-key"
 ci_webhook_url    = "https://ci.example.com/webhook"
-ci_webhook_secret = "your-webhook-secret-here"
+# DO NOT COMMIT WEBHOOK SECRETS. Use environment variables or GitHub Actions secrets.
+ci_webhook_secret = "REPLACE_WITH_WEBHOOK_SECRET (use env var or GitHub Actions secret)"
 
 # Docker Registry
 docker_username = "your-docker-username"
-docker_password = "your-docker-password"
+# DO NOT COMMIT DOCKER PASSWORDS. Use environment variables or a secret manager.
+docker_password = "REPLACE_WITH_DOCKER_PASSWORD (use env var or secret manager)"
 
 # Production Environment Secrets
-production_api_key = "prod-api-key-value"
-production_db_url  = "postgresql://user:pass@prod-db.example.com:5432/proddb"
+# DO NOT COMMIT PRODUCTION SECRETS. Use environment variables or a secret manager.
+production_api_key = "REPLACE_WITH_PRODUCTION_API_KEY (use env var or secret manager)"
+production_db_url  = "REPLACE_WITH_PRODUCTION_DB_URL (use env var or secret manager)"
 
 # Staging Environment Secrets
-staging_api_key = "staging-api-key-value"
-staging_db_url  = "postgresql://user:pass@staging-db.example.com:5432/stagingdb"
+# DO NOT COMMIT STAGING SECRETS. Use environment variables or a secret manager.
+staging_api_key = "REPLACE_WITH_STAGING_API_KEY (use env var or secret manager)"
+staging_db_url  = "REPLACE_WITH_STAGING_DB_URL (use env var or secret manager)"
 
 # NPM Publishing Token
-npm_publish_token = "npm_token_for_publishing_packages"
+# DO NOT COMMIT PUBLISH TOKENS. Use environment variables or a secret manager.
+npm_publish_token = "REPLACE_WITH_NPM_PUBLISH_TOKEN (use env var or secret manager)"
