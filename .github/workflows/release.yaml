@@ -1,41 +1,40 @@
-name: Release
+name: Manual Release Publish
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (optional). If empty, will publish the first draft found'
+        required: false
+
+permissions:
+  contents: write
 
 jobs:
-  release:
-    name: Release
-    runs-on: ${{ vars.CI_GITHUB_RUNNER || 'ubuntu-latest' }}
-    outputs:
-      new_release_published: ${{ steps.release.outputs.new_release_published }}
-      new_release_version: ${{ steps.release.outputs.new_release_version }}
-      new_release_major_version: ${{ steps.release.outputs.new_release_major_version }}
-      new_release_minor_version: ${{ steps.release.outputs.new_release_minor_version }}
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-      id-token: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Refresh release draft
+        uses: release-drafter/release-drafter@v5
         with:
-          node-version: '22.x'
+          version: ${{ github.event.inputs.tag || '' }}
 
-      - name: Semantic Release
-        id: release
-        uses: cycjimmy/semantic-release-action@v6
+      - name: Publish draft release
+        uses: actions/github-script@v6
         with:
-          extra_plugins: |
-            @semantic-release/commit-analyzer@^13.0.1
-            @semantic-release/exec@^7.1.0
-            @semantic-release/git@^10.0.1
-            @semantic-release/github@^11.0.6
-            @semantic-release/release-notes-generator@^14.1.0
-            conventional-changelog-conventionalcommits@^9.1.0
-            semantic-release-github-actions-tags@^2.0.2
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = '${{ github.event.inputs.tag }}';
+            const releases = await github.rest.repos.listReleases({ owner, repo });
+            const draft = releases.data.find(r => r.draft && (tag ? r.tag_name === tag : true));
+            if (!draft) core.setFailed('No draft release found for tag: ' + tag);
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: draft.id,
+              draft: false
+            });
+            core.info('Published release: ' + draft.html_url);
