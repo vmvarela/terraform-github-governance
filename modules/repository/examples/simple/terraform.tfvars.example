@@ -1,5 +1,6 @@
 # GitHub Provider Configuration
-github_token = "ghp_YOUR_GITHUB_TOKEN_HERE"
+# DO NOT COMMIT SECRETS into repository. Use environment variables or GitHub Actions secrets.
+github_token = "REPLACE_WITH_GITHUB_TOKEN (use env var or GitHub Actions secret)"
 
 # Core Configuration
 name           = "my-test-repo"
