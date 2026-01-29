@@ -38,12 +38,30 @@ locals {
       ])
     )
   ]))
+
+  # Extract all roles used in permissions across all repositories
+  base_roles = ["pull", "triage", "push", "maintain", "admin"]
+  all_permission_roles = distinct(flatten([
+    for k, repo in var.repositories :
+    values(coalesce(repo.permissions, {}))
+  ]))
+
+  # Check if any role is not in base_roles
+  has_custom_roles = length([
+    for role in local.all_permission_roles :
+    role if !contains(local.base_roles, role)
+  ]) > 0
 }
 
 # Fetch user data for referenced users (only if not provided)
 data "github_user" "referenced_users" {
   for_each = length(var.github_user_ids) == 0 ? toset(local.all_user_logins) : toset([])
   username = each.value
+}
+
+# Fetch organization custom roles (only if custom roles are detected)
+data "github_organization_repository_roles" "all" {
+  count = local.has_custom_roles ? 1 : 0
 }
 
 # Fetch app installation data for referenced apps (only if not provided)
@@ -68,4 +86,10 @@ locals {
   github_app_ids = length(var.github_app_ids) > 0 ? var.github_app_ids : {
     for slug, app in data.github_app.bypass_apps : slug => app.id
   }
+
+  # Build allowed roles list: base roles + custom roles (if fetched)
+  allowed_roles = local.has_custom_roles ? concat(
+    local.base_roles,
+    [for role in data.github_organization_repository_roles.all[0].roles : role.name]
+  ) : local.base_roles
 }
