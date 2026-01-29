@@ -67,8 +67,9 @@ jobs:
 
       - name: Setup Ghoten
         if: ${{ matrix.provider == 'ghoten' }}
-        uses: vmvarela/ghoten/actions/setup@v${{ matrix.version }}
+        uses: vmvarela/ghoten/actions/setup@master
         with:
+          ghoten_version: ${{ matrix.version }}
           alias: 'terraform'
 
       - name: Symlink OpenTofu to terraform (for tests/hooks)
