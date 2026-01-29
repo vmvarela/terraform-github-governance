@@ -1,0 +1,20 @@
+name: Pull Request Labeler
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Label by changed files
+        uses: actions/labeler@v4
+        with:
+          configuration-path: .github/labeler.yml

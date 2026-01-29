@@ -1,0 +1,26 @@
+name-template: "v$NEXT_PATCH_VERSION"
+tag-template: "v$NEXT_PATCH_VERSION"
+change-template: "- $TITLE (#$NUMBER) @ $AUTHOR"
+categories:
+  - title: "🚀 Features"
+    labels: ["enhancement"]
+  - title: "🐛 Bug Fixes"
+    labels: ["bug"]
+  - title: "📚 Documentation"
+    labels: ["documentation"]
+  - title: "🧩 Modules"
+    labels: ["modules"]
+  - title: "🧪 Tests"
+    labels: ["testing"]
+  - title: "🔧 CI / Tooling"
+    labels: ["ci", "chore"]
+  - title: "🔒 Security"
+    labels: ["security"]
+  - title: "⚠️ Breaking Changes"
+    labels: ["breaking"]
+
+template: |
+  ## What’s Changed
+  $CHANGES
+
+  **Full changelog**: https://github.com/$REPOSITORY/compare/$PREVIOUS_TAG...$NEXT_TAG
