@@ -13,8 +13,24 @@ env:
 
 jobs:
   test:
-    name: Test
-    runs-on: ${{ vars.CI_GITHUB_RUNNER || 'ubuntu-latest' }}
+    name: Test - ${{ matrix.provider }} ${{ matrix.version }}
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: terraform
+            version: '1.14.4'
+          - provider: terraform
+            version: '1.13.5'
+          - provider: terraform
+            version: '1.12.2'
+          - provider: opentofu
+            version: '1.11.4'
+          - provider: opentofu
+            version: '1.10.8'
+          - provider: opentofu
+            version: '1.9.4'
     permissions:
       actions: read
       contents: read
@@ -36,12 +52,24 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Setup Terraform
+      - name: Setup Terraform (HashiCorp)
+        if: ${{ matrix.provider == 'terraform' }}
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_version: ${{ matrix.version }}
+
+      - name: Setup OpenTofu
+        if: ${{ matrix.provider == 'opentofu' }}
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ matrix.version }}
+
+      - name: Symlink OpenTofu to terraform (for tests/hooks)
+        if: ${{ matrix.provider == 'opentofu' }}
+        run: sudo ln -s "$(which opentofu)" /usr/local/bin/terraform || true
 
       - name: Setup TFLint
+        if: ${{ matrix.provider == 'terraform' }}
         uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
@@ -62,8 +90,17 @@ jobs:
           echo "Running a small md generation check (non-fatal)"
           terraform-docs md table --no-sort . || true
 
-      - name: Pre-commit
+      - name: Pre-commit (Terraform only)
+        if: ${{ matrix.provider == 'terraform' }}
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
           fail-on-changed: true
+
+      - name: OpenTofu core checks (when running OpenTofu)
+        if: ${{ matrix.provider == 'opentofu' }}
+        run: |
+          set -euo pipefail
+          terraform init -backend=false
+          terraform validate
+          terraform test
