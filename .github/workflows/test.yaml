@@ -79,8 +79,8 @@ jobs:
           which tofu
           ln -s $(which tofu) /usr/local/bin/terraform
           terraform --version
+
       - name: Setup TFLint
-        if: ${{ matrix.provider == 'terraform' }}
         uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
