@@ -25,11 +25,13 @@ jobs:
           - provider: terraform
             version: '1.12.2'
           - provider: opentofu
-            version: 'v1.11.4'
+            version: '1.11.4'
           - provider: opentofu
-            version: 'v1.10.8'
+            version: '1.10.8'
           - provider: opentofu
-            version: 'v1.9.4'
+            version: '1.9.4'
+          - provider: ghoten
+            version: '1.11.4'
     permissions:
       actions: read
       contents: read
@@ -63,9 +65,26 @@ jobs:
         with:
           tofu_version: ${{ matrix.version }}
 
+      - name: Setup Ghoten
+        if: ${{ matrix.provider == 'ghoten' }}
+        uses: vmvarela/ghoten/actions/setup@v${{ matrix.version }}
+        with:
+          alias: 'terraform'
+
       - name: Symlink OpenTofu to terraform (for tests/hooks)
         if: ${{ matrix.provider == 'opentofu' }}
-        run: sudo ln -s "$(which opentofu)" /usr/local/bin/terraform || true
+        run: |
+          # If setup-opentofu provides TOFU_CLI_PATH, use it. Otherwise try common binary names.
+          if [ -n "${TOFU_CLI_PATH:-}" ] && [ -x "${TOFU_CLI_PATH}" ]; then
+            sudo ln -sf "${TOFU_CLI_PATH}" /usr/local/bin/terraform
+            sudo chmod +x /usr/local/bin/terraform || true
+          elif command -v opentofu >/dev/null 2>&1; then
+            sudo ln -sf "$(command -v opentofu)" /usr/local/bin/terraform
+          elif command -v tofu >/dev/null 2>&1; then
+            sudo ln -sf "$(command -v tofu)" /usr/local/bin/terraform
+          else
+            echo "OpenTofu binary not found; continuing without symlink"
+          fi
 
       - name: Setup TFLint
         if: ${{ matrix.provider == 'terraform' }}
@@ -87,7 +106,8 @@ jobs:
         run: |
           echo "terraform-docs version: $(terraform-docs --version)"
           echo "Running a small md generation check (non-fatal)"
-          terraform-docs md table --no-sort . || true
+          # Some terraform-docs versions don't support --no-sort; fallback if flag is unsupported
+          terraform-docs md table --no-sort . || terraform-docs md table . || true
 
       - name: Pre-commit (Terraform only)
         if: ${{ matrix.provider == 'terraform' }}
