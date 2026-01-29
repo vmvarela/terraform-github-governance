@@ -134,8 +134,7 @@ variable "repository_secrets" {
   }))
   description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values are objects: { value = string, sensitive = optional(bool, true) }."
   default     = {}
-  sensitive   = true
-}
+
 
 variable "repository_variables" {
   type        = map(string)
