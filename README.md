@@ -375,6 +375,10 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 **Made with ❤️ by [Victor Varela](https://github.com/vmvarela)**
 
 <!-- BEGIN_TF_DOCS -->
+## Secrets
+
+**Do not commit secrets**: Never commit tokens or secret values in the repository or in `terraform.tfvars`. Use GitHub Actions secrets, environment variables, or a secret manager (OIDC). Example: set `GITHUB_TOKEN` in your CI environment and reference it via `var.github_token`.
+
 ## Requirements
 
 | Name | Version |
