@@ -1,7 +1,8 @@
 # GitHub Repository Governance Module
 
-[![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.6-623CE4?logo=terraform)](https://www.terraform.io)
+[![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.0-623CE4?logo=terraform)](https://www.terraform.io)
 [![GitHub Provider](https://img.shields.io/badge/provider-github%20~%3E%206.0-181717?logo=github)](https://registry.terraform.io/providers/integrations/github/latest)
+[![Release](https://img.shields.io/github/v/release/vmvarela/terraform-github-governance?style=flat-square)](https://github.com/vmvarela/terraform-github-governance/releases)
 [![Tests](https://img.shields.io/badge/tests-14%20passed-success?logo=terraform)](./tests/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://pre-commit.com/)
@@ -355,7 +356,7 @@ For repository submodule examples:
 ## Requirements
 
 - Terraform >= 1.0
-- GitHub Provider = 6.8.1
+- GitHub Provider = 6.8.2
 
 ## License
 
