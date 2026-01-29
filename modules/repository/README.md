@@ -400,7 +400,7 @@ environments = {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_github"></a> [github](#provider\_github) | 6.8.0 |
+| <a name="provider_github"></a> [github](#provider\_github) | 6.10.2 |
 
 ## Modules
 
@@ -434,7 +434,7 @@ No modules.
 | <a name="input_description"></a> [description](#input\_description) | A short, friendly description of the repository's purpose. | `string` | `null` | no |
 | <a name="input_environments"></a> [environments](#input\_environments) | Defines CI/CD environments (e.g., 'staging', 'production') with optional required\_approvers (teams/users), secrets and variables. Empty or omitted required\_approvers disables reviewer protection. | <pre>map(object({<br/>    required_approvers = optional(list(string), []) # e.g., ["user:login", "team:slug"]<br/>    secrets            = optional(map(string), {})<br/>    variables          = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_github_app_ids"></a> [github\_app\_ids](#input\_github\_app\_ids) | Map of app slug -> app installation ID. Required for branch bypass app actors. Must be provided by parent governance module. | `map(number)` | `{}` | no |
-| <a name="input_github_team_ids"></a> [github\_team\_ids](#input\_github\_team\_ids) | Map of team slug -> team ID. Required for branch bypass actors and environment reviewers. Must be provided by parent governance module. | `map(number)` | `null` | no |
+| <a name="input_github_team_ids"></a> [github\_team\_ids](#input\_github\_team\_ids) | Map of team slug -> team ID. Required for branch bypass actors and environment reviewers. Must be provided by parent governance module. | `map(number)` | `{}` | no |
 | <a name="input_github_user_ids"></a> [github\_user\_ids](#input\_github\_user\_ids) | Map of user login -> user ID. Required for environment reviewers. Must be provided by parent governance module. | `map(number)` | `{}` | no |
 | <a name="input_is_template"></a> [is\_template](#input\_is\_template) | Mark this repository as a template repository. | `bool` | `false` | no |
 | <a name="input_name"></a> [name](#input\_name) | The name of the repository. Must be unique within its workspace (organization, group, or project). | `string` | n/a | yes |

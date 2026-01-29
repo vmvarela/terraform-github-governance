@@ -387,7 +387,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 | Name | Version |
 |------|---------|
-| <a name="provider_github"></a> [github](#provider\_github) | 6.8.2 |
+| <a name="provider_github"></a> [github](#provider\_github) | ~> 6.0 |
 
 ## Modules
 
@@ -400,7 +400,9 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 | Name | Type |
 |------|------|
 | [github_app.bypass_apps](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/app) | data source |
+| [github_organization_repository_roles.all](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/organization_repository_roles) | data source |
 | [github_organization_teams.all](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/organization_teams) | data source |
+| [github_user.referenced_users](https://registry.terraform.io/providers/integrations/github/latest/docs/data-sources/user) | data source |
 
 ## Inputs
 
