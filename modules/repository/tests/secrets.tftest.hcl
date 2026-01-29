@@ -4,17 +4,17 @@ run "secrets_object_handling" {
   command = plan
 
   variables {
-    name                 = "repo-secrets"
-    description          = "Repository with secrets"
-    visibility           = "private"
-    default_branch       = "main"
-    organization         = "test-org"
-    topics               = []
-    permissions          = {}
-    deploy_keys          = {}
-    webhooks             = {}
-    repository_secrets   = {
-      "CI_TOKEN" = { value = "secret-value", sensitive = true }
+    name           = "repo-secrets"
+    description    = "Repository with secrets"
+    visibility     = "private"
+    default_branch = "main"
+    organization   = "test-org"
+    topics         = []
+    permissions    = {}
+    deploy_keys    = {}
+    webhooks       = {}
+    repository_secrets = {
+      "CI_TOKEN" = "secret-value"
     }
     repository_variables = {}
     environments         = {}

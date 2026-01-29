@@ -23,11 +23,15 @@ mock_provider "github" {
     }
   }
 
-  mock_data "github_team" {
+  mock_data "github_organization_teams" {
     defaults = {
-      id   = 1
-      slug = "test-team"
-      name = "Test Team"
+      teams = [
+        {
+          id   = 1
+          slug = "test-team"
+          name = "Test Team"
+        }
+      ]
     }
   }
 }

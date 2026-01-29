@@ -444,7 +444,7 @@ No modules.
 | <a name="input_prevent_force_push"></a> [prevent\_force\_push](#input\_prevent\_force\_push) | Prevent force-pushes (non-fast-forward). | `bool` | `true` | no |
 | <a name="input_properties"></a> [properties](#input\_properties) | Generic key-value metadata properties. | `map(string)` | `{}` | no |
 | <a name="input_protected_branches"></a> [protected\_branches](#input\_protected\_branches) | Branches to protect. Empty list disables the ruleset. Patterns like 'main', 'release/*'. | `list(string)` | `[]` | no |
-| <a name="input_repository_secrets"></a> [repository\_secrets](#input\_repository\_secrets) | Map of secrets at the REPOSITORY level (global). Keys are secret names, values are objects: `{ value = string, sensitive = optional(bool, true) }`. | `map(object({ value = string, sensitive = optional(bool, true) }))` | `{}` | no |
+| <a name="input_repository_secrets"></a> [repository\_secrets](#input\_repository\_secrets) | Map of secrets at the REPOSITORY level (global). Keys are secret names, values are secret values. | `map(string)` | `{}` | no |
 | <a name="input_repository_variables"></a> [repository\_variables](#input\_repository\_variables) | Map of variables at the REPOSITORY level (global). | `map(string)` | `{}` | no |
 | <a name="input_required_approvals"></a> [required\_approvals](#input\_required\_approvals) | Number of required PR approvals. 0 disables PR requirement. | `number` | `1` | no |
 | <a name="input_required_checks"></a> [required\_checks](#input\_required\_checks) | List of required status check contexts. Strict policy is always enforced. | `list(string)` | `[]` | no |

@@ -128,12 +128,10 @@ variable "webhooks" {
 }
 
 variable "repository_secrets" {
-  type = map(object({
-    value     = string
-    sensitive = optional(bool, true)
-  }))
-  description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values are objects: { value = string, sensitive = optional(bool, true) }."
+  type        = map(string)
+  description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values are secret values.\n  Prefer injecting secrets via environment variables or CI secrets to avoid storing secrets in state."
   default     = {}
+}
 
 
 variable "repository_variables" {

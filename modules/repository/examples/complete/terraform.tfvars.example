@@ -24,7 +24,7 @@ staging_db_url  = "postgresql://user:pass@staging-db.example.com:5432/stagingdb"
 # NPM Publishing Token
 npm_publish_token = "npm_token_for_publishing_packages"
 
-# Repository secrets (object form)
+# Repository secrets
 # repository_secrets = {
-#   "CI_TOKEN" = { value = "REPLACE_WITH_CI_TOKEN (use env var or GitHub Actions secret)", sensitive = true }
+#   "CI_TOKEN" = "REPLACE_WITH_CI_TOKEN (use env var or GitHub Actions secret)"
 # }
