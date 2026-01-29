@@ -5,8 +5,6 @@ on:
       tag:
         description: 'Tag to publish (optional). If empty, will publish the first draft found'
         required: false
-  push:
-    branches: [master]
 
 permissions:
   contents: write
