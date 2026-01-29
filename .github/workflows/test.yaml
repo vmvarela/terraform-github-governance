@@ -45,10 +45,14 @@ jobs:
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
 
-      - name: Install terraform-docs
-        uses: terraform-docs/gh-action@v0.17.0
-        with:
-          version: v0.17.0
+      - name: Install terraform-docs (download binary)
+        run: |
+          set -euo pipefail
+          version="v0.17.0"
+          curl -sSL "https://github.com/terraform-docs/terraform-docs/releases/download/${version}/terraform-docs-${version}-linux-amd64.tar.gz" -o /tmp/terraform-docs.tar.gz
+          tar -xzf /tmp/terraform-docs.tar.gz -C /tmp
+          sudo mv /tmp/terraform-docs /usr/local/bin/terraform-docs
+          terraform-docs --version
 
       - name: Pre-commit
         uses: pre-commit/action@v3.0.1
