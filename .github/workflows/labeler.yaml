@@ -17,4 +17,4 @@ jobs:
       - name: Label by changed files
         uses: actions/labeler@v4
         with:
-          configuration-path: .github/labeler.yaml
+          configuration-path: .github/labeler.yml
