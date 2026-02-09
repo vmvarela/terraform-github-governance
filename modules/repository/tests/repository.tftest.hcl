@@ -133,3 +133,92 @@ run "ruleset_with_bypass" {
     error_message = "Ruleset name mismatch"
   }
 }
+
+run "repository_with_merge_settings" {
+  command = plan
+  variables {
+    name                   = "repo-merge"
+    description            = "Merge settings test"
+    visibility             = "private"
+    default_branch         = "main"
+    organization           = "test-org"
+    topics                 = []
+    permissions            = {}
+    deploy_keys            = {}
+    webhooks               = {}
+    repository_secrets     = {}
+    repository_variables   = {}
+    environments           = {}
+    protected_branches     = []
+    github_team_ids        = {}
+    github_user_ids        = {}
+    github_app_ids         = {}
+    allow_merge_commit     = false
+    allow_squash_merge     = true
+    allow_rebase_merge     = false
+    delete_branch_on_merge = true
+    allow_auto_merge       = true
+  }
+  assert {
+    condition     = github_repository.this.allow_merge_commit == false
+    error_message = "allow_merge_commit should be false"
+  }
+  assert {
+    condition     = github_repository.this.allow_squash_merge == true
+    error_message = "allow_squash_merge should be true"
+  }
+  assert {
+    condition     = github_repository.this.allow_rebase_merge == false
+    error_message = "allow_rebase_merge should be false"
+  }
+  assert {
+    condition     = github_repository.this.delete_branch_on_merge == true
+    error_message = "delete_branch_on_merge should be true"
+  }
+  assert {
+    condition     = github_repository.this.allow_auto_merge == true
+    error_message = "allow_auto_merge should be true"
+  }
+}
+
+run "repository_with_feature_toggles" {
+  command = plan
+  variables {
+    name                 = "repo-features"
+    description          = "Feature toggles test"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    permissions          = {}
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    environments         = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = {}
+    github_app_ids       = {}
+    has_issues           = true
+    has_wiki             = false
+    has_projects         = false
+    has_discussions      = true
+  }
+  assert {
+    condition     = github_repository.this.has_issues == true
+    error_message = "has_issues should be true"
+  }
+  assert {
+    condition     = github_repository.this.has_wiki == false
+    error_message = "has_wiki should be false"
+  }
+  assert {
+    condition     = github_repository.this.has_projects == false
+    error_message = "has_projects should be false"
+  }
+  assert {
+    condition     = github_repository.this.has_discussions == true
+    error_message = "has_discussions should be true"
+  }
+}

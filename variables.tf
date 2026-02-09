@@ -38,6 +38,28 @@ variable "presets" {
     required_checks         = optional(list(string))
     prevent_force_push      = optional(bool)
     prevent_branch_deletion = optional(bool)
+
+    # Merge settings
+    allow_merge_commit          = optional(bool)
+    allow_squash_merge          = optional(bool)
+    allow_rebase_merge          = optional(bool)
+    allow_auto_merge            = optional(bool)
+    delete_branch_on_merge      = optional(bool)
+    allow_update_branch         = optional(bool)
+    squash_merge_commit_title   = optional(string)
+    squash_merge_commit_message = optional(string)
+    merge_commit_title          = optional(string)
+    merge_commit_message        = optional(string)
+
+    # Feature toggles
+    has_issues      = optional(bool)
+    has_wiki        = optional(bool)
+    has_projects    = optional(bool)
+    has_discussions = optional(bool)
+
+    # Security
+    vulnerability_alerts        = optional(bool)
+    web_commit_signoff_required = optional(bool)
   }))
   default = {
     default = {}
@@ -109,6 +131,32 @@ variable "repositories" {
     required_checks         = optional(list(string))
     prevent_force_push      = optional(bool)
     prevent_branch_deletion = optional(bool)
+
+    # Merge settings (can override preset)
+    allow_merge_commit          = optional(bool)
+    allow_squash_merge          = optional(bool)
+    allow_rebase_merge          = optional(bool)
+    allow_auto_merge            = optional(bool)
+    delete_branch_on_merge      = optional(bool)
+    allow_update_branch         = optional(bool)
+    squash_merge_commit_title   = optional(string)
+    squash_merge_commit_message = optional(string)
+    merge_commit_title          = optional(string)
+    merge_commit_message        = optional(string)
+
+    # Feature toggles (can override preset)
+    has_issues      = optional(bool)
+    has_wiki        = optional(bool)
+    has_projects    = optional(bool)
+    has_discussions = optional(bool)
+
+    # Repository-only settings (not in presets)
+    archived     = optional(bool)
+    homepage_url = optional(string)
+
+    # Security (can override preset)
+    vulnerability_alerts        = optional(bool)
+    web_commit_signoff_required = optional(bool)
   }))
 
   validation {

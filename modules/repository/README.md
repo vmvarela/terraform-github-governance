@@ -428,16 +428,30 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_allow_auto_merge"></a> [allow\_auto\_merge](#input\_allow\_auto\_merge) | Set to true to allow auto-merging pull requests on the repository. | `bool` | `false` | no |
 | <a name="input_allow_bypass"></a> [allow\_bypass](#input\_allow\_bypass) | Actors allowed to bypass protections: 'org-admin', 'role:maintain\|write\|admin', 'team:slug', 'app:slug'. | `list(string)` | `[]` | no |
+| <a name="input_allow_merge_commit"></a> [allow\_merge\_commit](#input\_allow\_merge\_commit) | Set to false to disable merge commits on the repository. | `bool` | `true` | no |
+| <a name="input_allow_rebase_merge"></a> [allow\_rebase\_merge](#input\_allow\_rebase\_merge) | Set to false to disable rebase merges on the repository. | `bool` | `true` | no |
+| <a name="input_allow_squash_merge"></a> [allow\_squash\_merge](#input\_allow\_squash\_merge) | Set to false to disable squash merges on the repository. | `bool` | `true` | no |
+| <a name="input_allow_update_branch"></a> [allow\_update\_branch](#input\_allow\_update\_branch) | Set to true to always suggest updating pull request branches. | `bool` | `false` | no |
 | <a name="input_allowed_roles"></a> [allowed\_roles](#input\_allowed\_roles) | List of allowed repository roles. Empty list disables validation. Defaults to GitHub built-in roles. | `list(string)` | <pre>[<br/>  "pull",<br/>  "triage",<br/>  "push",<br/>  "maintain",<br/>  "admin"<br/>]</pre> | no |
+| <a name="input_archived"></a> [archived](#input\_archived) | Specifies if the repository should be archived. NOTE: currently the API does not support unarchiving. | `bool` | `false` | no |
 | <a name="input_default_branch"></a> [default\_branch](#input\_default\_branch) | The name of the main branch (e.g., 'main'). | `string` | `"main"` | no |
+| <a name="input_delete_branch_on_merge"></a> [delete\_branch\_on\_merge](#input\_delete\_branch\_on\_merge) | Automatically delete head branch after a pull request is merged. | `bool` | `false` | no |
 | <a name="input_deploy_keys"></a> [deploy\_keys](#input\_deploy\_keys) | Map of deploy keys to add. The map key is the title of the deploy key. | <pre>map(object({<br/>    key       = string # The SSH public key<br/>    read_only = optional(bool, false)<br/>  }))</pre> | `{}` | no |
 | <a name="input_description"></a> [description](#input\_description) | A short, friendly description of the repository's purpose. | `string` | `null` | no |
 | <a name="input_environments"></a> [environments](#input\_environments) | Defines CI/CD environments (e.g., 'staging', 'production') with optional required\_approvers (teams/users), secrets and variables. Empty or omitted required\_approvers disables reviewer protection. | <pre>map(object({<br/>    required_approvers = optional(list(string), []) # e.g., ["user:login", "team:slug"]<br/>    secrets            = optional(map(string), {})<br/>    variables          = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_github_app_ids"></a> [github\_app\_ids](#input\_github\_app\_ids) | Map of app slug -> app installation ID. Required for branch bypass app actors. Must be provided by parent governance module. | `map(number)` | `{}` | no |
 | <a name="input_github_team_ids"></a> [github\_team\_ids](#input\_github\_team\_ids) | Map of team slug -> team ID. Required for branch bypass actors and environment reviewers. Must be provided by parent governance module. | `map(number)` | `{}` | no |
 | <a name="input_github_user_ids"></a> [github\_user\_ids](#input\_github\_user\_ids) | Map of user login -> user ID. Required for environment reviewers. Must be provided by parent governance module. | `map(number)` | `{}` | no |
+| <a name="input_has_discussions"></a> [has\_discussions](#input\_has\_discussions) | Set to true to enable GitHub Discussions on the repository. | `bool` | `false` | no |
+| <a name="input_has_issues"></a> [has\_issues](#input\_has\_issues) | Set to true to enable the GitHub Issues features on the repository. | `bool` | `true` | no |
+| <a name="input_has_projects"></a> [has\_projects](#input\_has\_projects) | Set to true to enable the GitHub Projects features on the repository. | `bool` | `true` | no |
+| <a name="input_has_wiki"></a> [has\_wiki](#input\_has\_wiki) | Set to true to enable the GitHub Wiki features on the repository. | `bool` | `true` | no |
+| <a name="input_homepage_url"></a> [homepage\_url](#input\_homepage\_url) | URL of a page describing the project. | `string` | `null` | no |
 | <a name="input_is_template"></a> [is\_template](#input\_is\_template) | Mark this repository as a template repository. | `bool` | `false` | no |
+| <a name="input_merge_commit_message"></a> [merge\_commit\_message](#input\_merge\_commit\_message) | Default merge commit message. Can be 'PR\_BODY', 'PR\_TITLE', or 'BLANK'. Applicable only if allow\_merge\_commit is true. | `string` | `null` | no |
+| <a name="input_merge_commit_title"></a> [merge\_commit\_title](#input\_merge\_commit\_title) | Default merge commit title. Can be 'PR\_TITLE' or 'MERGE\_MESSAGE'. Applicable only if allow\_merge\_commit is true. | `string` | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | The name of the repository. Must be unique within its workspace (organization, group, or project). | `string` | n/a | yes |
 | <a name="input_organization"></a> [organization](#input\_organization) | GitHub organization name where the repository will be created. | `string` | n/a | yes |
 | <a name="input_permissions"></a> [permissions](#input\_permissions) | Map of permission grants. Key is the entity ('user:name' or 'team:slug'), Value is the provider-specific role name (e.g., 'write', 'admin', 'my-custom-role'). | `map(string)` | `{}` | no |
@@ -449,9 +463,13 @@ No modules.
 | <a name="input_repository_variables"></a> [repository\_variables](#input\_repository\_variables) | Map of variables at the REPOSITORY level (global). | `map(string)` | `{}` | no |
 | <a name="input_required_approvals"></a> [required\_approvals](#input\_required\_approvals) | Number of required PR approvals. 0 disables PR requirement. | `number` | `1` | no |
 | <a name="input_required_checks"></a> [required\_checks](#input\_required\_checks) | List of required status check contexts. Strict policy is always enforced. | `list(string)` | `[]` | no |
+| <a name="input_squash_merge_commit_message"></a> [squash\_merge\_commit\_message](#input\_squash\_merge\_commit\_message) | Default squash merge commit message. Can be 'PR\_BODY', 'COMMIT\_MESSAGES', or 'BLANK'. Applicable only if allow\_squash\_merge is true. | `string` | `null` | no |
+| <a name="input_squash_merge_commit_title"></a> [squash\_merge\_commit\_title](#input\_squash\_merge\_commit\_title) | Default squash merge commit title. Can be 'PR\_TITLE' or 'COMMIT\_OR\_PR\_TITLE'. Applicable only if allow\_squash\_merge is true. | `string` | `null` | no |
 | <a name="input_template"></a> [template](#input\_template) | Create this repository from a template repository. Use 'owner/repo' format. | <pre>object({<br/>    repository           = string # "owner/repo" format<br/>    include_all_branches = optional(bool, false)<br/>  })</pre> | `null` | no |
 | <a name="input_topics"></a> [topics](#input\_topics) | A list of GitHub topics to classify the repository. | `list(string)` | `[]` | no |
 | <a name="input_visibility"></a> [visibility](#input\_visibility) | Visibility of the repository. Valid values: 'public', 'private', or 'internal'. | `string` | `"private"` | no |
+| <a name="input_vulnerability_alerts"></a> [vulnerability\_alerts](#input\_vulnerability\_alerts) | Set to true to enable security alerts for vulnerable dependencies. | `bool` | `true` | no |
+| <a name="input_web_commit_signoff_required"></a> [web\_commit\_signoff\_required](#input\_web\_commit\_signoff\_required) | Require contributors to sign off on web-based commits. | `bool` | `false` | no |
 | <a name="input_webhooks"></a> [webhooks](#input\_webhooks) | Map of webhooks to configure. Key is the webhook name. | <pre>map(object({<br/>    url    = string<br/>    events = list(string) # Generic events: 'push', 'pull_request', 'issue'<br/>    secret = optional(string, null)<br/>  }))</pre> | `{}` | no |
 | <a name="input_workspace"></a> [workspace](#input\_workspace) | Optional workspace/namespace for logical grouping of repositories. If provided, will be stored as a custom property. | `string` | `null` | no |
 
@@ -459,7 +477,9 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_archived"></a> [archived](#output\_archived) | Whether the repository is archived |
 | <a name="output_default_branch"></a> [default\_branch](#output\_default\_branch) | The name of the default branch of the repository |
+| <a name="output_delete_branch_on_merge"></a> [delete\_branch\_on\_merge](#output\_delete\_branch\_on\_merge) | Whether head branches are automatically deleted after merge |
 | <a name="output_deploy_keys_count"></a> [deploy\_keys\_count](#output\_deploy\_keys\_count) | Number of deploy keys created |
 | <a name="output_environments_count"></a> [environments\_count](#output\_environments\_count) | Number of environments created |
 | <a name="output_full_name"></a> [full\_name](#output\_full\_name) | A string of the form 'orgname/reponame' |

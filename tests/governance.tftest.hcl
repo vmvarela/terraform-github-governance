@@ -494,3 +494,140 @@ run "test_staging_preset" {
     error_message = "Staging preset should create a protected-branches ruleset"
   }
 }
+
+run "test_merge_settings_from_preset" {
+  command = plan
+
+  variables {
+    organization      = "test-org"
+    workspace         = "test"
+    repository_naming = "%s"
+
+    presets = {
+      squash-only = {
+        allow_merge_commit     = false
+        allow_squash_merge     = true
+        allow_rebase_merge     = false
+        delete_branch_on_merge = true
+        allow_auto_merge       = true
+      }
+    }
+
+    repositories = {
+      my-service = {
+        preset      = "squash-only"
+        description = "Squash-only service"
+      }
+    }
+  }
+
+  assert {
+    condition     = module.repositories["my-service"].delete_branch_on_merge == true
+    error_message = "Preset should enable delete_branch_on_merge"
+  }
+}
+
+run "test_merge_settings_repo_override" {
+  command = plan
+
+  variables {
+    organization      = "test-org"
+    workspace         = "test"
+    repository_naming = "%s"
+
+    presets = {
+      strict = {
+        allow_merge_commit     = false
+        allow_rebase_merge     = false
+        delete_branch_on_merge = true
+      }
+    }
+
+    repositories = {
+      special = {
+        preset             = "strict"
+        description        = "Special repo"
+        allow_merge_commit = true # Override preset
+      }
+    }
+  }
+
+  assert {
+    condition     = module.repositories["special"].delete_branch_on_merge == true
+    error_message = "Preset delete_branch_on_merge should still apply"
+  }
+}
+
+run "test_feature_toggles_from_preset" {
+  command = plan
+
+  variables {
+    organization      = "test-org"
+    workspace         = "test"
+    repository_naming = "%s"
+
+    presets = {
+      minimal = {
+        has_issues   = true
+        has_wiki     = false
+        has_projects = false
+      }
+    }
+
+    repositories = {
+      lean-repo = {
+        preset      = "minimal"
+        description = "Minimal feature repo"
+      }
+    }
+  }
+
+  assert {
+    condition     = module.repositories["lean-repo"].visibility == "private"
+    error_message = "Default visibility should be private"
+  }
+}
+
+run "test_archived_repository" {
+  command = plan
+
+  variables {
+    organization      = "test-org"
+    workspace         = "test"
+    repository_naming = "%s"
+
+    repositories = {
+      old-project = {
+        description = "Archived project"
+        archived    = true
+      }
+    }
+  }
+
+  assert {
+    condition     = module.repositories["old-project"].archived == true
+    error_message = "Repository should be archived"
+  }
+}
+
+run "test_security_defaults" {
+  command = plan
+
+  variables {
+    organization      = "test-org"
+    workspace         = "test"
+    repository_naming = "%s"
+
+    repositories = {
+      secure-repo = {
+        description = "Secure repo"
+      }
+    }
+  }
+
+  # vulnerability_alerts defaults to true (security-first governance)
+  assert {
+    condition     = module.repositories["secure-repo"].default_branch == "main"
+    error_message = "Default branch should be main"
+  }
+}
