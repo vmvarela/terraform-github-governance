@@ -1,10 +1,10 @@
 # GitHub Repository Governance Module
 
 [![Release](https://img.shields.io/github/v/release/vmvarela/terraform-github-governance?logo=github)](https://github.com/vmvarela/terraform-github-governance/releases)
-[![Tests](https://img.shields.io/badge/tests-14%20passed-success?logo=pre-commit)](./tests/)
-[![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.0-623CE4?logo=terraform)](https://www.terraform.io)
-[![OpenTofu Version](https://img.shields.io/badge/opentofu-%3E%3D1.0-FFDA18?logo=opentofu)](https://opentofu.org)
-[![GitHub Provider](https://img.shields.io/badge/provider-github%20~%3E%206.0-181717?logo=github)](https://registry.terraform.io/providers/integrations/github/latest)
+[![Tests](https://img.shields.io/badge/tests-27%20passed-success?logo=pre-commit)](./tests/)
+[![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.7-623CE4?logo=terraform)](https://www.terraform.io)
+[![OpenTofu Version](https://img.shields.io/badge/opentofu-%3E%3D1.7-FFDA18?logo=opentofu)](https://opentofu.org)
+[![GitHub Provider](https://img.shields.io/badge/provider-github%20%3E%3D%206.8.0-181717?logo=github)](https://registry.terraform.io/providers/integrations/github/latest)
 
 A Terraform module for managing GitHub repositories at scale with configurable presets, standardized naming patterns, and secure branch protection defaults.
 
@@ -14,6 +14,10 @@ A Terraform module for managing GitHub repositories at scale with configurable p
 - **Standardized Naming**: Apply organization-wide naming patterns with `repository_naming`
 - **Safe Renaming**: Rename repositories without Terraform resource recreation
 - **Branch Protection**: Flat, intuitive configuration with automatic code owner review enforcement
+- **Merge Strategies**: Configurable merge commit, squash, rebase, auto-merge, and branch cleanup settings
+- **Feature Toggles**: Control issues, wiki, projects, and discussions per repository or preset
+- **Security Settings**: Vulnerability alerts and web commit sign-off requirements
+- **Sensitive Secrets**: Repository secrets marked as sensitive with safe `for_each` iteration
 - **Performance Optimization**: Central ID resolution - governance module pre-fetches all team/user/app IDs once and passes them to repository instances, eliminating duplicate API calls
 - **Hierarchical Architecture**: Governance module orchestrates repository submodule for clean separation
 
@@ -24,15 +28,16 @@ A Terraform module for managing GitHub repositories at scale with configurable p
 ├── main.tf                          # Governance orchestration logic
 ├── variables.tf                     # Input variables
 ├── outputs.tf                       # Module outputs
-├── versions.tf                      # Terraform and provider requirements
-├── data.tf                          # Pre-fetch team/app IDs
+├── locals.tf                        # Preset resolution & repository processing
+├── terraform.tf                     # Terraform and provider requirements
 ├── data.tf                          # Pre-fetch team/app IDs
 ├── modules/
 │   └── repository/                  # Repository submodule
 │       ├── main.tf
 │       ├── variables.tf
 │       ├── outputs.tf
-│       ├── versions.tf
+│       ├── locals.tf
+│       ├── terraform.tf
 │       ├── examples/
 │       │   ├── simple/              # Basic repository usage
 │       │   └── complete/            # Advanced repository features
@@ -42,7 +47,7 @@ A Terraform module for managing GitHub repositories at scale with configurable p
 │   ├── simple/                      # Basic governance usage
 │   └── complete/                    # Advanced governance features
 └── tests/
-    └── governance.tftest.hcl        # Governance module tests
+    └── governance.tftest.hcl        # Governance module tests (22 tests)
 ```
 
 ## Quick Start
@@ -53,9 +58,9 @@ A Terraform module for managing GitHub repositories at scale with configurable p
 module "governance" {
   source = "path/to/module"
 
-  organization       = "my-org"
-  workspace          = "platform"
-  repository_naming  = "%s"  # No prefix, use keys as-is
+  organization      = "my-org"
+  workspace         = "platform"          # Optional: logical grouping
+  repository_naming = "%s"                # No prefix, use keys as-is
 
   # Define any non-default presets you want to use
   presets = {
@@ -87,9 +92,8 @@ module "governance" {
 module "governance" {
   source = "path/to/module"
 
-  organization = "my-org"
-  workspace   = "microservices"
-  repository_naming  = "myorg-%s"  # Prefix: myorg-api-service, myorg-worker, etc.
+  organization      = "my-org"
+  repository_naming = "myorg-%s"  # Prefix: myorg-api-service, myorg-worker, etc.
 
   repositories = {
     api-service = {}      # Creates "myorg-api-service"
@@ -181,7 +185,7 @@ repositories = {
 }
 ```
 
-**Note**: The `workspace` property is automatically added from `workspace`.
+**Note**: If `workspace` is set, it is automatically added as a custom property on each repository.
 
 ### Template Repositories
 
@@ -272,15 +276,15 @@ Ruleset behavior:
 | Name | Type | Description |
 |------|------|-------------|
 | `organization` | string | GitHub organization name |
-| `workspace` | string | workspace/namespace for logical grouping |
 
 ### Optional
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
+| `workspace` | string | `null` | Optional workspace/namespace for logical grouping (stored as custom property) |
 | `repository_naming` | string | `"%s"` | sprintf-style format string for repository names |
 | `repositories` | map(object) | `{}` | Map of repositories to create |
-| `presets` | map(object) | `{ default = {} }` | Named presets you define and reference |
+| `presets` | map(object) | `{ default = {} }` | Named presets you define and reference (includes merge, feature, and security settings) |
 
 ### Repository Object
 
@@ -299,7 +303,7 @@ Ruleset behavior:
   deploy_keys        = optional(map(object))
   allowed_roles      = optional(list(string))
   webhooks           = optional(map(object))
-  repository_secrets = optional(map(string))    # or map(object({ value = string, sensitive = optional(bool, true) }))
+  repository_secrets = optional(map(string))    # Marked as sensitive
   repository_variables = optional(map(string))
   environments       = optional(map(object))
 
@@ -310,14 +314,38 @@ Ruleset behavior:
   required_checks         = optional(list(string))
   prevent_force_push      = optional(bool)
   prevent_branch_deletion = optional(bool)
-}
+  # Merge settings (can override preset)
+  allow_merge_commit          = optional(bool)
+  allow_squash_merge          = optional(bool)
+  allow_rebase_merge          = optional(bool)
+  allow_auto_merge            = optional(bool)
+  delete_branch_on_merge      = optional(bool)
+  allow_update_branch         = optional(bool)
+  squash_merge_commit_title   = optional(string)
+  squash_merge_commit_message = optional(string)
+  merge_commit_title          = optional(string)
+  merge_commit_message        = optional(string)
+
+  # Feature toggles (can override preset)
+  has_issues      = optional(bool)
+  has_wiki        = optional(bool)
+  has_projects    = optional(bool)
+  has_discussions  = optional(bool)
+
+  # Repository-only settings (not in presets)
+  archived     = optional(bool)
+  homepage_url = optional(string)
+
+  # Security (can override preset)
+  vulnerability_alerts        = optional(bool)
+  web_commit_signoff_required = optional(bool)}
 ```
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| `repositories` | Map of repositories with id, names, URLs, default_branch, and `protected_branches_ruleset_id` |
+| `repositories` | Map of repositories with id, names, URLs, default_branch, `protected_branches_ruleset_id`, and `applied_preset` |
 | `repository_names` | Map of keys to GitHub names |
 | `repository_urls` | Map of keys to HTML URLs |
 | `workspace` | The workspace applied to all repositories |
@@ -333,14 +361,21 @@ Run tests with:
 terraform test
 ```
 
-**Test Coverage**:
+**Test Coverage (27 tests: 22 governance + 5 submodule)**:
 - ✅ Preset application (default, production-service, library, staging, experimental, documentation)
 - ✅ Name format with and without prefix
 - ✅ Explicit name field for renaming
 - ✅ Preset overrides (approvals, visibility, checks)
-- ✅ workspace injection into properties
+- ✅ Workspace injection into properties
 - ✅ Multiple repositories with different presets
 - ✅ Topics and properties merging
+- ✅ Merge strategy settings (squash, rebase, auto-merge, branch cleanup)
+- ✅ Feature toggle settings (issues, wiki, projects, discussions)
+- ✅ Security settings (vulnerability alerts, web commit sign-off)
+- ✅ Repository-only settings (archived, homepage_url)
+- ✅ Optional workspace (null default)
+- ✅ Empty repositories map
+- ✅ Minimal configuration
 
 ## Examples
 
@@ -354,8 +389,8 @@ For repository submodule examples:
 
 ## Requirements
 
-- Terraform >= 1.0
-- GitHub Provider = 6.8.2
+- Terraform >= 1.7
+- GitHub Provider >= 6.8.0
 
 ## License
 
