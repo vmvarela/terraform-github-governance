@@ -133,11 +133,11 @@ resource "github_repository_webhook" "webhook" {
 
 # Repository secrets
 resource "github_actions_secret" "repo_secret" {
-  for_each = var.repository_secrets != null ? var.repository_secrets : {}
+  for_each = nonsensitive(toset(keys(var.repository_secrets != null ? var.repository_secrets : {})))
 
   repository      = github_repository.this.name
   secret_name     = each.key
-  plaintext_value = each.value
+  plaintext_value = var.repository_secrets[each.key]
 }
 
 # Repository variables
