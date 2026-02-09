@@ -414,6 +414,7 @@ No modules.
 | [github_actions_environment_variable.env_var](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_environment_variable) | resource |
 | [github_actions_secret.repo_secret](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_secret) | resource |
 | [github_actions_variable.repo_var](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/actions_variable) | resource |
+| [github_branch_default.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/branch_default) | resource |
 | [github_repository.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository) | resource |
 | [github_repository_collaborators.all](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_collaborators) | resource |
 | [github_repository_custom_property.property](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_custom_property) | resource |

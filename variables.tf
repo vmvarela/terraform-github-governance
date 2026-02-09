@@ -27,6 +27,7 @@ variable "organization" {
 variable "presets" {
   description = "Preset configurations map. Select with repositories[*].preset; falls back to 'default'."
   type = map(object({
+    description             = optional(string)
     visibility              = optional(string)
     default_branch          = optional(string)
     topics                  = optional(list(string), [])
@@ -91,10 +92,7 @@ variable "repositories" {
       events = list(string)
       secret = optional(string)
     })))
-    repository_secrets = optional(map(object({
-      value     = string
-      sensitive = optional(bool, true)
-    })))
+    repository_secrets   = optional(map(string))
     repository_variables = optional(map(string))
 
     # CI/CD Environments

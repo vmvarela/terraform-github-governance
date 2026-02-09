@@ -22,6 +22,13 @@ mock_provider "github" {
     }
   }
 
+  mock_resource "github_branch_default" {
+    defaults = {
+      id     = "test-repo"
+      branch = "main"
+    }
+  }
+
   mock_data "github_team" {
     defaults = {
       id   = 1
