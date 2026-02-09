@@ -91,6 +91,16 @@ resource "github_repository" "this" {
   topics      = var.topics
   is_template = var.is_template
 
+  # Template (if provided)
+  dynamic "template" {
+    for_each = var.template == null ? [] : [var.template]
+    content {
+      owner                = split("/", template.value.repository)[0]
+      repository           = split("/", template.value.repository)[1]
+      include_all_branches = template.value.include_all_branches
+    }
+  }
+
   # Validate that all referenced teams, users and apps are provided by the parent module
   lifecycle {
     precondition {
@@ -124,16 +134,6 @@ resource "github_repository" "this" {
         for slug in [for actor in var.allow_bypass : split(":", actor)[1] if startswith(actor, "app:")] :
         slug if !contains(keys(var.github_app_ids), slug)
       ])}. Parent module must provide all app IDs in github_app_ids variable."
-    }
-  }
-
-  # Template (if provided)
-  dynamic "template" {
-    for_each = var.template == null ? [] : [var.template]
-    content {
-      owner                = split("/", template.value.repository)[0]
-      repository           = split("/", template.value.repository)[1]
-      include_all_branches = template.value.include_all_branches
     }
   }
 }
@@ -179,13 +179,13 @@ resource "github_repository_collaborators" "all" {
 resource "github_repository_webhook" "webhook" {
   for_each   = var.webhooks != null ? var.webhooks : {}
   repository = github_repository.this.name
+  events     = each.value.events
   configuration {
     url          = each.value.url
     secret       = each.value.secret
     content_type = "json"
     insecure_ssl = false
   }
-  events = each.value.events
 }
 
 # Repository secrets

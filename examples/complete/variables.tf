@@ -1,26 +1,28 @@
 variable "github_token" {
-  type        = string
   description = "GitHub personal access token"
+  type        = string
   sensitive   = true
 }
 
 variable "organization" {
-  type        = string
   description = "GitHub organization name"
+  type        = string
 }
 
-variable "workspace" {
-  type        = string
-  description = "workspace/namespace for logical grouping of repositories"
+variable "presets" {
+  description = "Optional presets override forwarded to the governance module."
+  type        = map(any)
+  default     = { "default" = { visibility = "public" } }
 }
 
 variable "repository_naming" {
-  type        = string
   description = "sprintf-style format string for repository names (e.g., '%s' or 'prefix-%s')"
+  type        = string
   default     = "%s"
 }
 
 variable "repositories" {
+  description = "Map of repositories to create with their configurations"
   type = map(object({
     preset         = optional(string, "default")
     name           = optional(string)
@@ -62,12 +64,10 @@ variable "repositories" {
     prevent_force_push      = optional(bool)
     prevent_branch_deletion = optional(bool)
   }))
-  description = "Map of repositories to create with their configurations"
-  default     = {}
+  default = {}
 }
 
-variable "presets" {
-  description = "Optional presets override forwarded to the governance module."
-  type        = map(any)
-  default     = { "default" = { visibility = "public" } }
+variable "workspace" {
+  description = "workspace/namespace for logical grouping of repositories"
+  type        = string
 }

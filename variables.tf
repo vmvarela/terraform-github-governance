@@ -1,22 +1,51 @@
-# --- 1. Organization ---
+variable "github_app_ids" {
+  description = "Optional map of app slug -> app installation ID. If empty, fetches apps individually via data source. Used for branch protection bypass actors."
+  type        = map(number)
+  default     = {}
+  # Example: { "renovate" = 333, "dependabot" = 444 }
+}
+
+variable "github_team_ids" {
+  description = "Optional map of team slug -> team ID. If empty, fetches all organization teams via data source. Used for branch protection bypass actors and environment reviewers."
+  type        = map(number)
+  default     = {}
+  # Example: { "sre" = 12345, "platform" = 67890 }
+}
+
+variable "github_user_ids" {
+  description = "Optional map of user login -> numeric user ID. If empty, repository module resolves IDs individually via data source (less efficient). Used for environment reviewers. Cannot be auto-fetched org-wide as GitHub API returns node IDs (strings) not numeric IDs."
+  type        = map(number)
+  default     = {}
+  # Example: { "alice" = 111, "bob" = 222 }
+}
 
 variable "organization" {
-  type        = string
   description = "GitHub organization name where repositories will be created."
-}
-
-# --- 2. workspace ---
-
-variable "workspace" {
   type        = string
-  description = "workspace/namespace name for logical grouping of repositories. Will be stored as a custom property on each repository."
 }
 
-# --- 3. Naming Pattern ---
+variable "presets" {
+  description = "Preset configurations map. Select with repositories[*].preset; falls back to 'default'."
+  type = map(object({
+    visibility              = optional(string)
+    default_branch          = optional(string)
+    topics                  = optional(list(string), [])
+    properties              = optional(map(string), {})
+    protected_branches      = optional(list(string))
+    allow_bypass            = optional(list(string), [])
+    required_approvals      = optional(number)
+    required_checks         = optional(list(string))
+    prevent_force_push      = optional(bool)
+    prevent_branch_deletion = optional(bool)
+  }))
+  default = {
+    default = {}
+  }
+}
 
 variable "repository_naming" {
-  type        = string
   description = "sprintf-style format string for repository names. Use a single '%s' placeholder for the repository key. Example: '%s' (no prefix), 'myorg-%s' (with prefix)."
+  type        = string
   default     = "%s"
 
   validation {
@@ -25,9 +54,8 @@ variable "repository_naming" {
   }
 }
 
-# --- 4. Repositories ---
-
 variable "repositories" {
+  description = "Map of repositories to create. The map key is a stable identifier (won't trigger recreation). Use 'name' field to rename repositories safely."
   type = map(object({
     # Optional preset to apply (defaults to "default")
     preset = optional(string, "default")
@@ -84,7 +112,6 @@ variable "repositories" {
     prevent_force_push      = optional(bool)
     prevent_branch_deletion = optional(bool)
   }))
-  description = "Map of repositories to create. The map key is a stable identifier (won't trigger recreation). Use 'name' field to rename repositories safely."
 
   validation {
     condition = alltrue([
@@ -102,46 +129,7 @@ variable "repositories" {
   }
 }
 
-# --- 5. Presets ---
-
-variable "presets" {
-  type = map(object({
-    visibility              = optional(string)
-    default_branch          = optional(string)
-    topics                  = optional(list(string), [])
-    properties              = optional(map(string), {})
-    protected_branches      = optional(list(string))
-    allow_bypass            = optional(list(string), [])
-    required_approvals      = optional(number)
-    required_checks         = optional(list(string))
-    prevent_force_push      = optional(bool)
-    prevent_branch_deletion = optional(bool)
-  }))
-  description = "Preset configurations map. Select with repositories[*].preset; falls back to 'default'."
-  default = {
-    default = {}
-  }
-}
-
-# --- 6. Performance Optimization ---
-
-variable "github_team_ids" {
-  type        = map(number)
-  description = "Optional map of team slug -> team ID. If empty, fetches all organization teams via data source. Used for branch protection bypass actors and environment reviewers."
-  default     = {}
-  # Example: { "sre" = 12345, "platform" = 67890 }
-}
-
-variable "github_user_ids" {
-  type        = map(number)
-  description = "Optional map of user login -> numeric user ID. If empty, repository module resolves IDs individually via data source (less efficient). Used for environment reviewers. Cannot be auto-fetched org-wide as GitHub API returns node IDs (strings) not numeric IDs."
-  default     = {}
-  # Example: { "alice" = 111, "bob" = 222 }
-}
-
-variable "github_app_ids" {
-  type        = map(number)
-  description = "Optional map of app slug -> app installation ID. If empty, fetches apps individually via data source. Used for branch protection bypass actors."
-  default     = {}
-  # Example: { "renovate" = 333, "dependabot" = 444 }
+variable "workspace" {
+  description = "workspace/namespace name for logical grouping of repositories. Will be stored as a custom property on each repository."
+  type        = string
 }

@@ -1,7 +1,11 @@
-# Outputs
 output "all_repositories" {
   description = "Full details of all repositories"
   value       = module.governance.repositories
+}
+
+output "organization" {
+  description = "The GitHub organization"
+  value       = module.governance.organization
 }
 
 output "repository_names" {
@@ -17,9 +21,4 @@ output "repository_urls" {
 output "workspace" {
   description = "The workspace applied to all repositories"
   value       = module.governance.workspace
-}
-
-output "organization" {
-  description = "The GitHub organization"
-  value       = module.governance.organization
 }
