@@ -4,8 +4,8 @@ github_token = "REPLACE_WITH_GITHUB_TOKEN (use env var or GitHub Actions secret)
 
 # Governance Configuration
 organization      = "your-organization"
-workspace        = "microservices"
-repository_naming = "myorg-%s" # Prefix all repository names
+workspace         = "microservices"             # Optional: logical grouping
+repository_naming = "myorg-%s"                  # Prefix all repository names
 
 # Define presets referenced below (names must match repositories[*].preset)
 presets = {

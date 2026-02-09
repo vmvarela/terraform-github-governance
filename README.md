@@ -425,7 +425,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 | Name | Version |
 |------|---------|
-| <a name="provider_github"></a> [github](#provider\_github) | 6.10.2 |
+| <a name="provider_github"></a> [github](#provider\_github) | 6.11.0 |
 
 ## Modules
 

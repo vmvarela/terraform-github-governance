@@ -1,12 +1,11 @@
 # GitHub Provider Configuration
-github_org   = "vmvarela-org-testing"
 # DO NOT COMMIT SECRETS into repository. Use environment variables or GitHub Actions secrets.
 github_token = "REPLACE_WITH_GITHUB_TOKEN (use env var or GitHub Actions secret)"
 
 # Governance Configuration
 organization      = "vmvarela-org-testing"
-workspace        = "platform"
-repository_naming = "%s" # Use repository keys directly as names
+workspace         = "platform"                # Optional: logical grouping
+repository_naming = "%s"                      # Use repository keys directly as names
 
 # (Opcional) Define presets y refiérelos desde repositories[*].preset
 presets = {
