@@ -68,21 +68,6 @@ output "protected_branches_ruleset_id" {
   value       = length(github_repository_ruleset.ruleset) > 0 ? github_repository_ruleset.ruleset[0].id : null
 }
 
-output "repository_full_name" {
-  description = "A string of the form 'orgname/reponame'"
-  value       = github_repository.this.full_name
-}
-
-output "repository_id" {
-  description = "The ID of the created repository"
-  value       = github_repository.this.id
-}
-
-output "repository_name" {
-  description = "The name of the created repository"
-  value       = github_repository.this.name
-}
-
 output "repository_secrets_count" {
   description = "Number of repository secrets"
   value       = length(github_actions_secret.repo_secret)
