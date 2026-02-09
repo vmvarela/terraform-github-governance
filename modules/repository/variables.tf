@@ -185,6 +185,14 @@ variable "template" {
     include_all_branches = optional(bool, false)
   })
   default = null
+
+  validation {
+    condition = var.template == null || (
+      length(trim(var.template.repository)) > 0 &&
+      can(regex("^[^/]+/[^/]+$", var.template.repository))
+    )
+    error_message = "Invalid 'template.repository' format. Use 'owner/repo' with exactly one '/'."
+  }
 }
 
 variable "topics" {
