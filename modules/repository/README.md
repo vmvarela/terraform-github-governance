@@ -472,9 +472,6 @@ No modules.
 | <a name="output_properties_count"></a> [properties\_count](#output\_properties\_count) | Number of custom properties created |
 | <a name="output_protected_branches_ruleset_created"></a> [protected\_branches\_ruleset\_created](#output\_protected\_branches\_ruleset\_created) | Whether a protected-branches ruleset was created |
 | <a name="output_protected_branches_ruleset_id"></a> [protected\_branches\_ruleset\_id](#output\_protected\_branches\_ruleset\_id) | ID of the created protected-branches ruleset (if any) |
-| <a name="output_repository_full_name"></a> [repository\_full\_name](#output\_repository\_full\_name) | A string of the form 'orgname/reponame' |
-| <a name="output_repository_id"></a> [repository\_id](#output\_repository\_id) | The ID of the created repository |
-| <a name="output_repository_name"></a> [repository\_name](#output\_repository\_name) | The name of the created repository |
 | <a name="output_repository_secrets_count"></a> [repository\_secrets\_count](#output\_repository\_secrets\_count) | Number of repository secrets |
 | <a name="output_repository_variables_count"></a> [repository\_variables\_count](#output\_repository\_variables\_count) | Number of repository variables |
 | <a name="output_ssh_clone_url"></a> [ssh\_clone\_url](#output\_ssh\_clone\_url) | URL that can be provided to git clone to clone the repository via SSH |
