@@ -116,7 +116,7 @@ variable "protected_branches" {
 }
 
 variable "repository_secrets" {
-  description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values contain the secret value (sensitive) and optional sensitivity flag."
+  description = "Map of secrets at the REPOSITORY level (global). Keys are secret names, values are the secret values (sensitive strings)."
   type        = map(string)
   default     = {}
 }
