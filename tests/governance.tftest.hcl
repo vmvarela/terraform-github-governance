@@ -631,3 +631,61 @@ run "test_security_defaults" {
     error_message = "Default branch should be main"
   }
 }
+
+run "test_workspace_optional" {
+  command = plan
+
+  variables {
+    organization      = "test-org"
+    repository_naming = "%s"
+
+    repositories = {
+      no-workspace = {
+        description = "Repo without workspace"
+      }
+    }
+  }
+
+  # When workspace is not set, properties should not include it
+  assert {
+    condition     = !contains(keys(module.repositories["no-workspace"].properties), "workspace")
+    error_message = "Properties should not include workspace when not set"
+  }
+}
+
+run "test_empty_repositories" {
+  command = plan
+
+  variables {
+    organization = "test-org"
+  }
+
+  # Module should work with zero repositories
+  assert {
+    condition     = length(module.repositories) == 0
+    error_message = "Empty repositories should produce no modules"
+  }
+}
+
+run "test_minimal_config" {
+  command = plan
+
+  variables {
+    organization = "test-org"
+
+    repositories = {
+      minimal = {}
+    }
+  }
+
+  # Minimal repo (no description, no workspace) should still work
+  assert {
+    condition     = module.repositories["minimal"].name == "minimal"
+    error_message = "Minimal repo should use key as name"
+  }
+
+  assert {
+    condition     = module.repositories["minimal"].visibility == "private"
+    error_message = "Minimal repo should default to private"
+  }
+}
