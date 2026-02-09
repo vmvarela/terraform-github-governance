@@ -53,6 +53,12 @@ resource "github_repository" "this" {
   }
 }
 
+# Default branch
+resource "github_branch_default" "this" {
+  repository = github_repository.this.name
+  branch     = var.default_branch
+}
+
 # Deploy keys
 resource "github_repository_deploy_key" "deploy_key" {
   for_each   = var.deploy_keys != null ? var.deploy_keys : {}
@@ -83,11 +89,9 @@ resource "github_repository_collaborators" "all" {
     }
   }
 
-  lifecycle {
-    # Ignore changes to user permissions - GitHub auto-elevates org owners to admin
-    # This prevents drift when a user with lower permissions is actually an org owner
-    ignore_changes = [user]
-  }
+  # NOTE: GitHub auto-elevates org owners to admin regardless of assigned permission.
+  # If you see plan drift for org owners, it's expected behavior from GitHub's side.
+  # Consider excluding org owners from the permissions map.
 }
 
 # Webhooks

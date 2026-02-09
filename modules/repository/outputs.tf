@@ -1,6 +1,6 @@
 output "default_branch" {
   description = "The name of the default branch of the repository"
-  value       = coalesce(var.default_branch, "main")
+  value       = github_branch_default.this.branch
 }
 
 output "deploy_keys_count" {

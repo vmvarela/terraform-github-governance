@@ -25,6 +25,13 @@ mock_provider "github" {
       name = "protected-branches"
     }
   }
+
+  mock_resource "github_branch_default" {
+    defaults = {
+      id     = "test-repo"
+      branch = "main"
+    }
+  }
 }
 
 run "basic_repository" {

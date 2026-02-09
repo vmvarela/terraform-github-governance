@@ -22,12 +22,8 @@ module "repositories" {
   deploy_keys = each.value.deploy_keys
 
   # Automation (Global)
-  webhooks = each.value.webhooks
-  repository_secrets = try(each.value.repository_secrets, null) != null ? {
-    for k, v in each.value.repository_secrets : k => (
-      can(try(v.value, null)) ? v.value : v
-    )
-  } : null
+  webhooks             = each.value.webhooks
+  repository_secrets   = each.value.repository_secrets
   repository_variables = each.value.repository_variables
 
   # CI/CD Environments
