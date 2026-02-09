@@ -188,8 +188,8 @@ variable "template" {
 
   validation {
     condition = var.template == null || (
-      length(trim(var.template.repository)) > 0 &&
-      can(regex("^[^/]+/[^/]+$", var.template.repository))
+      length(trimspace(try(var.template.repository, ""))) > 0 &&
+      can(regex("^[^/]+/[^/]+$", try(var.template.repository, "")))
     )
     error_message = "Invalid 'template.repository' format. Use 'owner/repo' with exactly one '/'."
   }
