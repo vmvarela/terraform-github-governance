@@ -158,6 +158,7 @@ variable "repositories" {
     vulnerability_alerts        = optional(bool)
     web_commit_signoff_required = optional(bool)
   }))
+  default = {}
 
   validation {
     condition = alltrue([
@@ -176,6 +177,7 @@ variable "repositories" {
 }
 
 variable "workspace" {
-  description = "workspace/namespace name for logical grouping of repositories. Will be stored as a custom property on each repository."
+  description = "Optional workspace/namespace name for logical grouping of repositories. If provided, will be stored as a custom property on each repository."
   type        = string
+  default     = null
 }

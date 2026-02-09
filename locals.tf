@@ -51,11 +51,11 @@ locals {
       # Final repository name (always apply repository_naming format)
       name = format(var.repository_naming, coalesce(repo.name, key))
 
-      # Merge properties: preset properties + workspace + repo overrides
+      # Merge properties: preset properties + workspace (if set) + repo overrides
       properties = merge(
         try(local.preset_base_default.properties, {}),
         try(local.resolved_presets[key].properties, {}),
-        { workspace = var.workspace },
+        var.workspace != null ? { workspace = var.workspace } : {},
         try(repo.properties, {})
       )
 
