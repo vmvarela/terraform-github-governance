@@ -13,6 +13,28 @@ locals {
     required_checks         = []
     prevent_force_push      = true
     prevent_branch_deletion = true
+
+    # Merge settings
+    allow_merge_commit          = true
+    allow_squash_merge          = true
+    allow_rebase_merge          = true
+    allow_auto_merge            = false
+    delete_branch_on_merge      = false
+    allow_update_branch         = false
+    squash_merge_commit_title   = null
+    squash_merge_commit_message = null
+    merge_commit_title          = null
+    merge_commit_message        = null
+
+    # Feature toggles
+    has_issues      = true
+    has_wiki        = true
+    has_projects    = true
+    has_discussions = false
+
+    # Security
+    vulnerability_alerts        = true
+    web_commit_signoff_required = false
   }
 
   # Resolve the effective preset for each repository once
@@ -67,6 +89,32 @@ locals {
       required_checks         = coalesce(try(repo.required_checks, null), try(local.resolved_presets[key].required_checks, null), local.preset_base_default.required_checks)
       prevent_force_push      = coalesce(try(repo.prevent_force_push, null), try(local.resolved_presets[key].prevent_force_push, null), local.preset_base_default.prevent_force_push)
       prevent_branch_deletion = coalesce(try(repo.prevent_branch_deletion, null), try(local.resolved_presets[key].prevent_branch_deletion, null), local.preset_base_default.prevent_branch_deletion)
+
+      # Merge settings: merge preset + repo overrides
+      allow_merge_commit          = coalesce(try(repo.allow_merge_commit, null), try(local.resolved_presets[key].allow_merge_commit, null), local.preset_base_default.allow_merge_commit)
+      allow_squash_merge          = coalesce(try(repo.allow_squash_merge, null), try(local.resolved_presets[key].allow_squash_merge, null), local.preset_base_default.allow_squash_merge)
+      allow_rebase_merge          = coalesce(try(repo.allow_rebase_merge, null), try(local.resolved_presets[key].allow_rebase_merge, null), local.preset_base_default.allow_rebase_merge)
+      allow_auto_merge            = coalesce(try(repo.allow_auto_merge, null), try(local.resolved_presets[key].allow_auto_merge, null), local.preset_base_default.allow_auto_merge)
+      delete_branch_on_merge      = coalesce(try(repo.delete_branch_on_merge, null), try(local.resolved_presets[key].delete_branch_on_merge, null), local.preset_base_default.delete_branch_on_merge)
+      allow_update_branch         = coalesce(try(repo.allow_update_branch, null), try(local.resolved_presets[key].allow_update_branch, null), local.preset_base_default.allow_update_branch)
+      squash_merge_commit_title   = try(repo.squash_merge_commit_title, null) != null ? repo.squash_merge_commit_title : try(local.resolved_presets[key].squash_merge_commit_title, null)
+      squash_merge_commit_message = try(repo.squash_merge_commit_message, null) != null ? repo.squash_merge_commit_message : try(local.resolved_presets[key].squash_merge_commit_message, null)
+      merge_commit_title          = try(repo.merge_commit_title, null) != null ? repo.merge_commit_title : try(local.resolved_presets[key].merge_commit_title, null)
+      merge_commit_message        = try(repo.merge_commit_message, null) != null ? repo.merge_commit_message : try(local.resolved_presets[key].merge_commit_message, null)
+
+      # Feature toggles: merge preset + repo overrides
+      has_issues      = coalesce(try(repo.has_issues, null), try(local.resolved_presets[key].has_issues, null), local.preset_base_default.has_issues)
+      has_wiki        = coalesce(try(repo.has_wiki, null), try(local.resolved_presets[key].has_wiki, null), local.preset_base_default.has_wiki)
+      has_projects    = coalesce(try(repo.has_projects, null), try(local.resolved_presets[key].has_projects, null), local.preset_base_default.has_projects)
+      has_discussions = coalesce(try(repo.has_discussions, null), try(local.resolved_presets[key].has_discussions, null), local.preset_base_default.has_discussions)
+
+      # Repository-only settings (not inherited from presets)
+      archived     = coalesce(try(repo.archived, null), false)
+      homepage_url = try(repo.homepage_url, null)
+
+      # Security: merge preset + repo overrides
+      vulnerability_alerts        = coalesce(try(repo.vulnerability_alerts, null), try(local.resolved_presets[key].vulnerability_alerts, null), local.preset_base_default.vulnerability_alerts)
+      web_commit_signoff_required = coalesce(try(repo.web_commit_signoff_required, null), try(local.resolved_presets[key].web_commit_signoff_required, null), local.preset_base_default.web_commit_signoff_required)
 
       # Store the preset name for reference
       preset_name = repo.preset

@@ -1,3 +1,9 @@
+variable "allow_auto_merge" {
+  description = "Set to true to allow auto-merging pull requests on the repository."
+  type        = bool
+  default     = false
+}
+
 variable "allow_bypass" {
   description = "Actors allowed to bypass protections: 'org-admin', 'role:maintain|write|admin', 'team:slug', 'app:slug'."
   type        = list(string)
@@ -12,16 +18,52 @@ variable "allow_bypass" {
   }
 }
 
+variable "allow_merge_commit" {
+  description = "Set to false to disable merge commits on the repository."
+  type        = bool
+  default     = true
+}
+
+variable "allow_rebase_merge" {
+  description = "Set to false to disable rebase merges on the repository."
+  type        = bool
+  default     = true
+}
+
+variable "allow_squash_merge" {
+  description = "Set to false to disable squash merges on the repository."
+  type        = bool
+  default     = true
+}
+
+variable "allow_update_branch" {
+  description = "Set to true to always suggest updating pull request branches."
+  type        = bool
+  default     = false
+}
+
 variable "allowed_roles" {
   description = "List of allowed repository roles. Empty list disables validation. Defaults to GitHub built-in roles."
   type        = list(string)
   default     = ["pull", "triage", "push", "maintain", "admin"]
 }
 
+variable "archived" {
+  description = "Specifies if the repository should be archived. NOTE: currently the API does not support unarchiving."
+  type        = bool
+  default     = false
+}
+
 variable "default_branch" {
   description = "The name of the main branch (e.g., 'main')."
   type        = string
   default     = "main"
+}
+
+variable "delete_branch_on_merge" {
+  description = "Automatically delete head branch after a pull request is merged."
+  type        = bool
+  default     = false
 }
 
 variable "deploy_keys" {
@@ -79,10 +121,62 @@ variable "github_user_ids" {
   # Example: { "alice" = 111, "bob" = 222 }
 }
 
+variable "has_discussions" {
+  description = "Set to true to enable GitHub Discussions on the repository."
+  type        = bool
+  default     = false
+}
+
+variable "has_issues" {
+  description = "Set to true to enable the GitHub Issues features on the repository."
+  type        = bool
+  default     = true
+}
+
+variable "has_projects" {
+  description = "Set to true to enable the GitHub Projects features on the repository."
+  type        = bool
+  default     = true
+}
+
+variable "has_wiki" {
+  description = "Set to true to enable the GitHub Wiki features on the repository."
+  type        = bool
+  default     = true
+}
+
+variable "homepage_url" {
+  description = "URL of a page describing the project."
+  type        = string
+  default     = null
+}
+
 variable "is_template" {
   description = "Mark this repository as a template repository."
   type        = bool
   default     = false
+}
+
+variable "merge_commit_message" {
+  description = "Default merge commit message. Can be 'PR_BODY', 'PR_TITLE', or 'BLANK'. Applicable only if allow_merge_commit is true."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.merge_commit_message == null || try(contains(["PR_BODY", "PR_TITLE", "BLANK"], var.merge_commit_message), false)
+    error_message = "merge_commit_message must be one of 'PR_BODY', 'PR_TITLE', or 'BLANK'."
+  }
+}
+
+variable "merge_commit_title" {
+  description = "Default merge commit title. Can be 'PR_TITLE' or 'MERGE_MESSAGE'. Applicable only if allow_merge_commit is true."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.merge_commit_title == null || try(contains(["PR_TITLE", "MERGE_MESSAGE"], var.merge_commit_title), false)
+    error_message = "merge_commit_title must be one of 'PR_TITLE' or 'MERGE_MESSAGE'."
+  }
 }
 
 variable "name" {
@@ -178,6 +272,28 @@ variable "required_checks" {
   default     = []
 }
 
+variable "squash_merge_commit_message" {
+  description = "Default squash merge commit message. Can be 'PR_BODY', 'COMMIT_MESSAGES', or 'BLANK'. Applicable only if allow_squash_merge is true."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.squash_merge_commit_message == null || try(contains(["PR_BODY", "COMMIT_MESSAGES", "BLANK"], var.squash_merge_commit_message), false)
+    error_message = "squash_merge_commit_message must be one of 'PR_BODY', 'COMMIT_MESSAGES', or 'BLANK'."
+  }
+}
+
+variable "squash_merge_commit_title" {
+  description = "Default squash merge commit title. Can be 'PR_TITLE' or 'COMMIT_OR_PR_TITLE'. Applicable only if allow_squash_merge is true."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.squash_merge_commit_title == null || try(contains(["PR_TITLE", "COMMIT_OR_PR_TITLE"], var.squash_merge_commit_title), false)
+    error_message = "squash_merge_commit_title must be one of 'PR_TITLE' or 'COMMIT_OR_PR_TITLE'."
+  }
+}
+
 variable "template" {
   description = "Create this repository from a template repository. Use 'owner/repo' format."
   type = object({
@@ -210,6 +326,18 @@ variable "visibility" {
     condition     = contains(["public", "private", "internal"], coalesce(var.visibility, "private"))
     error_message = "Visibility must be one of 'public', 'private', or 'internal'."
   }
+}
+
+variable "vulnerability_alerts" {
+  description = "Set to true to enable security alerts for vulnerable dependencies."
+  type        = bool
+  default     = true
+}
+
+variable "web_commit_signoff_required" {
+  description = "Require contributors to sign off on web-based commits."
+  type        = bool
+  default     = false
 }
 
 variable "webhooks" {

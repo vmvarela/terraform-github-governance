@@ -1,6 +1,16 @@
+output "archived" {
+  description = "Whether the repository is archived"
+  value       = github_repository.this.archived
+}
+
 output "default_branch" {
   description = "The name of the default branch of the repository"
   value       = github_branch_default.this.branch
+}
+
+output "delete_branch_on_merge" {
+  description = "Whether head branches are automatically deleted after merge"
+  value       = github_repository.this.delete_branch_on_merge
 }
 
 output "deploy_keys_count" {
