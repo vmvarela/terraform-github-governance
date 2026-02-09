@@ -393,8 +393,8 @@ environments = {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.4 |
-| <a name="requirement_github"></a> [github](#requirement\_github) | >= 6.8.0, < 7.0.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
+| <a name="requirement_github"></a> [github](#requirement\_github) | >= 6.8.0 |
 
 ## Providers
 
