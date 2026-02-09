@@ -1,4 +1,7 @@
-# Outputs from governance module
+output "organization" {
+  description = "The GitHub organization name."
+  value       = var.organization
+}
 
 output "repositories" {
   description = "Map of repository keys to their full output details from the repository module."
@@ -38,9 +41,4 @@ output "repository_urls" {
 output "workspace" {
   description = "The workspace name applied to all repositories."
   value       = var.workspace
-}
-
-output "organization" {
-  description = "The GitHub organization name."
-  value       = var.organization
 }

@@ -1,6 +1,32 @@
 # Native Terraform HCL tests to validate configuration logic
 # These tests run in "plan" mode and validate structure without making actual GitHub API calls
 
+mock_provider "github" {
+  mock_resource "github_repository" {
+    defaults = {
+      id         = "test-repo-id"
+      name       = "test-repo"
+      full_name  = "test-org/test-repo"
+      html_url   = "https://github.com/test-org/test-repo"
+      visibility = "private"
+    }
+  }
+
+  mock_resource "github_repository_environment" {
+    defaults = {
+      id          = "test-env-id"
+      environment = "staging"
+    }
+  }
+
+  mock_resource "github_repository_ruleset" {
+    defaults = {
+      id   = 123
+      name = "protected-branches"
+    }
+  }
+}
+
 run "basic_repository" {
   command = plan
   variables {
