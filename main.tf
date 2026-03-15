@@ -6,7 +6,6 @@ module "repositories" {
   # Core configuration
   name           = each.value.name
   organization   = var.organization
-  workspace      = var.workspace
   description    = each.value.description
   visibility     = each.value.visibility
   default_branch = each.value.default_branch

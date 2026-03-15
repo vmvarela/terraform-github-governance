@@ -157,15 +157,6 @@ resource "github_repository_custom_property" "property" {
   property_value = [each.value]
 }
 
-# workspace custom property (if provided)
-resource "github_repository_custom_property" "workspace" {
-  count          = var.workspace != null ? 1 : 0
-  repository     = github_repository.this.name
-  property_name  = "workspace"
-  property_type  = "string"
-  property_value = [var.workspace]
-}
-
 # CI/CD Environments
 resource "github_repository_environment" "env" {
   for_each    = var.environments != null ? var.environments : {}

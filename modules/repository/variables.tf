@@ -350,9 +350,3 @@ variable "webhooks" {
   }))
   default = {}
 }
-
-variable "workspace" {
-  description = "Optional workspace/namespace for logical grouping of repositories. If provided, will be stored as a custom property."
-  type        = string
-  default     = null
-}

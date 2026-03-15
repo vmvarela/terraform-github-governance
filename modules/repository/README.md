@@ -1,26 +1,12 @@
 # GitHub Repository Module
 
-A flexible Terraform module for creating and managing individual GitHub repositories with comprehensive configuration options.
+The repository submodule used by the governance module. Can also be used directly when you need a single repository or don't want the preset system.
 
-## Overview
-
-This is the **repository submodule** used by the governance module. It can also be used directly for single-repository management or when you don't need preset configurations.
-
-**For multi-repository governance with presets**, use the parent governance module instead.
-
-## Features
-
-- **Core Configuration**: Name, description, visibility, default branch, topics
-- **Template Support**: Create repositories from templates or mark as template
-- **Access Control**: Granular permissions for users and teams, deploy keys
-- **Automation**: Webhooks, repository-level secrets and variables
-- **CI/CD Environments**: Environment-specific protection rules, secrets, and variables
-- **Branch Protection**: Flat inputs with automatic code owner review enforcement
-- **Custom Properties**: Extensible metadata storage
+**For managing many repositories with shared presets**, use the parent [governance module](../../) instead.
 
 ## Usage
 
-### Basic Repository
+### Basic repository
 
 ```hcl
 module "repository" {
@@ -28,14 +14,13 @@ module "repository" {
 
   name         = "my-service"
   organization = "my-org"
-  workspace    = "platform"
-  description  = "My service description"
+  description  = "My service"
   visibility   = "private"
   topics       = ["service", "backend"]
 }
 ```
 
-### With Branch Protection
+### With branch protection
 
 ```hcl
 module "repository" {
@@ -44,9 +29,8 @@ module "repository" {
   name         = "api-service"
   organization = "my-org"
 
-  # Flattened branch-protection inputs
   protected_branches      = ["main", "release/*"]
-  allow_bypass            = ["org-admin"]
+  allow_bypass            = ["org-admin", "team:sre"]
   required_approvals      = 2
   required_checks         = ["ci", "security-scan"]
   prevent_force_push      = true
@@ -54,218 +38,53 @@ module "repository" {
 }
 ```
 
-### With Permissions
-
-```hcl
-module "repository" {
-  source = "./modules/repository"
-
-  name         = "shared-library"
-  organization = "my-org"
-  visibility   = "public"
-
-  permissions = {
-    "user:john"      = "admin"
-    "team:engineers" = "push"
-    "team:external"  = "pull"
-  }
-}
-```
-
-### With Environment Protection
-
-```hcl
-module "repository" {
-  source = "./modules/repository"
-
-  name         = "web-app"
-  organization = "my-org"
-
-  environments = {
-    production = {
-      required_approvers = ["team:sre", "user:alice"]  # reviewers: teams and users
-      secrets = {
-        API_KEY = "secret-value"
-      }
-      variables = {
-        ENV = "production"
-      }
-    }
-  }
-}
-```
-
-Omit `required_approvers` or set it to `[]` to have an environment without enforced reviewers.
-
-## Variables
-
-### Core Configuration
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `name` | string | Yes | - | Repository name |
-| `organization` | string | Yes | - | GitHub organization |
-| `workspace` | string | No | `null` | Logical grouping workspace |
-| `description` | string | No | `null` | Repository description |
-| `visibility` | string | No | `"private"` | `public`, `private`, or `internal` |
-| `default_branch` | string | No | `"main"` | Main branch name |
-| `topics` | list(string) | No | `[]` | Repository topics |
-| `properties` | map(string) | No | `{}` | Custom metadata |
-
-### Template
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `is_template` | bool | No | `false` | Mark as template repository |
-| `template` | object | No | `null` | Create from template |
-
-### Access & Permissions
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `permissions` | map(string) | No | `{}` | Entity permissions (`user:name` or `team:slug` → role) |
-| `deploy_keys` | map(object) | No | `{}` | SSH deploy keys |
-| `allowed_roles` | list(string) | No | Built-in roles | Allowed repository roles |
-
-### Automation
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `webhooks` | map(object) | No | `{}` | Repository webhooks |
-| `repository_secrets` | map(string) | No | `{}` | Repository-level secrets |
-| `repository_variables` | map(string) | No | `{}` | Repository-level variables |
-
-### CI/CD Environments
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `environments` | map(object) | No | `{}` | Map of environment blocks each supporting `required_approvers`, `secrets`, `variables` |
-
-### Branch Protection Inputs
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `protected_branches` | list(string) | No | `["main"]` | Branch patterns to protect |
-| `allow_bypass` | list(string) | No | `[]` | Bypass actors (`org-admin`, `role:*`, `team:*`, `app:*`) |
-| `required_approvals` | number | No | `1` | Required approving reviews (0 disables PR requirement) |
-| `required_checks` | list(string) | No | `[]` | Required status checks contexts |
-| `prevent_force_push` | bool | No | `true` | Disallow force pushes |
-| `prevent_branch_deletion` | bool | No | `true` | Prevent branch deletion |
-
 When `required_approvals > 0`, code owner review and thread resolution are enforced automatically.
 
-### Performance Optimization
+Valid bypass formats: `org-admin` · `role:maintain|write|admin` · `team:<slug>` · `app:<slug>`
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `github_team_ids` | map(number) | **Yes** | `{}` | Team IDs map (slug → ID) for branch bypass actors and environment approvers. Must be provided by parent module. |
-| `github_user_ids` | map(number) | **Yes** | `{}` | User IDs map (login → ID) for environment approvers. Must be provided by parent module. |
-| `github_app_ids` | map(number) | **Yes** | `{}` | App IDs map (slug → installation ID) for branch bypass actors. Must be provided by parent module. |
-
-**Important**:
-- This module is designed to be called exclusively from the parent governance module, which pre-fetches all team, user, and app IDs.
-- The module **does not** perform any data source lookups (`data.github_team`, `data.github_user`, `data.github_app`) - all IDs must be provided.
-- This design enables the parent module to optimize API calls and prevents duplicate lookups across multiple repository instances.
-
-### Environment Reviewers & Permissions
-
-- Minimum role: Reviewers must have at least `push` permission in the repository for GitHub to accept them as environment reviewers.
-- Auto-elevation: The module automatically grants `push` to any reviewer (team/user) declared in `required_approvers` who is missing or below the minimum. To grant higher roles (e.g., `maintain`, `admin`), declare them explicitly in `permissions` — user-defined values take precedence.
-- Stable ordering: Ruleset `bypass_actors` are sorted deterministically by resolved IDs to avoid plan drift due to ordering.
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| `id` | Repository ID |
-| `name` | Repository name |
-| `full_name` | Full name (org/repo) |
-| `html_url` | HTML URL |
-| `ssh_clone_url` | SSH clone URL |
-| `http_clone_url` | HTTPS clone URL |
-| `node_id` | GraphQL node ID |
-| `default_branch` | Default branch name |
-| `protected_branches_ruleset_id` | Ruleset ID (if created) |
-| `protected_branches_ruleset_created` | Whether ruleset is created (boolean) |
-
-## Ruleset Configuration
-
-### Branch Patterns
-
-Use glob patterns for branches:
-- `main` - Exact match
-- `release/*` - All release branches
-- `hotfix/*` - All hotfix branches
-- `**` - All branches
-
-### Bypass Actors
-
-Supported formats:
-- `org-admin` - Organization administrators
-- `role:maintain`, `role:write`, `role:admin` - Repository roles
-- `team:slug` - Team by slug
-- `app:slug` - GitHub App by slug
-
-### Example: Complex Ruleset
-
-```hcl
-ruleset = {
-  branches = ["main", "release/*", "hotfix/*"]
-
-  allow_bypass = [
-    "org-admin",
-    "team:sre",
-    "app:renovate"
-  ]
-
-  required_approvals              = 2
-
-
-  required_checks = [
-    "ci",
-    "security-scan",
-    "integration-tests"
-  ]
-  prevent_force_push      = true
-  prevent_branch_deletion = true
-}
-```
-
-## Permissions Format
+### With permissions
 
 ```hcl
 permissions = {
-  "user:alice"     = "admin"
-  "user:bob"       = "push"
   "team:engineers" = "push"
   "team:external"  = "pull"
+  "user:alice"     = "admin"
 }
 ```
 
-**Built-in Roles**: `pull`, `triage`, `push`, `maintain`, `admin`
+Built-in roles: `pull`, `triage`, `push`, `maintain`, `admin`. Set `allowed_roles = []` to disable validation and use custom organization roles.
 
-**Custom Roles**: Set `allowed_roles = []` to disable validation and use custom organization roles.
+GitHub automatically elevates org owners to `admin` regardless of what you set — don't list them in `permissions` unless you're documenting intent.
 
-## Deploy Keys
+### With environments
+
+```hcl
+environments = {
+  production = {
+    required_approvers = ["team:sre", "user:alice"]
+    secrets            = { API_KEY = "prod-value" }
+    variables          = { ENV = "production" }
+  }
+  staging = {
+    variables = { ENV = "staging" }
+  }
+}
+```
+
+Reviewers must have at least `push` permission. The module auto-elevates any reviewer below that threshold. To grant a higher role, set it explicitly in `permissions`.
+
+### With deploy keys and webhooks
 
 ```hcl
 deploy_keys = {
   "CI/CD Key" = {
-    key       = "ssh-rsa AAAAB3..."
+    key       = "ssh-rsa AAAA..."
     read_only = false
   }
-  "Read-only Key" = {
-    key       = "ssh-rsa AAAAC4..."
-    read_only = true
-  }
 }
-```
 
-## Webhooks
-
-```hcl
 webhooks = {
-  "ci-webhook" = {
+  ci = {
     url    = "https://ci.example.com/webhook"
     events = ["push", "pull_request"]
     secret = "webhook-secret"
@@ -273,120 +92,35 @@ webhooks = {
 }
 ```
 
-## Testing
+## ID resolution
 
-The repository module includes comprehensive tests:
-
-```bash
-terraform test -filter=tests/repository.tftest.hcl
-```
-
-**Test Coverage**: 12 passing tests covering:
-- ✅ Basic repository creation
-- ✅ Ruleset configuration
-- ✅ Permissions and access control
-- ✅ Template support
-- ✅ Environments
-- ✅ Properties and metadata
-
-## Important Notes
-
-### Organization Owners and Permissions
-
-GitHub automatically grants `admin` permission to organization owners on all repositories, regardless of the permission level specified in Terraform. This module uses `lifecycle { ignore_changes = [user] }` to prevent drift detection when organization owners are listed with lower permissions (e.g., `pull` or `push`).
-
-**Why this happens:**
-- GitHub enforces that org owners always have admin access
-- Attempting to set a lower permission for an owner will be silently upgraded by GitHub
-- Without `ignore_changes`, Terraform would detect this as drift on every plan
-
-**Best practice:** Don't explicitly list organization owners in the `permissions` map unless you want to document their access. Their admin access is implicit.
-
-## Examples
-
-See the `examples/` directory:
-- **`examples/simple/`**: Basic repository creation with minimal configuration
-- **`examples/complete/`**: Advanced features (branch protection, permissions, environments)
-
-## Requirements
-
-- Terraform >= 1.0
-- GitHub Provider = 6.8.1
-
-## Used By
-
-This module is used by:
-- **Governance Module** (parent) - For multi-repository orchestration with presets
-- **Direct Usage** - For single-repository management
-
-## License
-
-## Breaking Changes (Latest Refactor)
-
-### v2.0 - Data Source Removal
-
-**Important**: This module now requires all team, user, and app IDs to be provided by the parent module:
-
-- **Removed**: `data.github_team`, `data.github_user`, `data.github_app` data sources
-- **Required**: `github_team_ids`, `github_user_ids`, `github_app_ids` variables must be provided
-- **Rationale**: Enables the parent module to optimize API calls and prevent duplicate lookups
-
-If you were using this module standalone, you must now fetch IDs yourself:
+This module does not perform any data source lookups. All team, user, and app IDs must be passed via `github_team_ids`, `github_user_ids`, and `github_app_ids`. The parent governance module handles this automatically; for direct usage, fetch IDs yourself:
 
 ```hcl
-# Fetch IDs before calling the module
-data "github_team" "platform" {
-  slug = "platform"
-}
+data "github_team" "sre" { slug = "sre" }
 
 module "repository" {
   source = "./modules/repository"
 
-  name = "my-repo"
-
-  # Must provide IDs explicitly
-  github_team_ids = {
-    platform = data.github_team.platform.id
-  }
+  name            = "my-repo"
+  organization    = "my-org"
+  allow_bypass    = ["team:sre"]
+  github_team_ids = { sre = data.github_team.sre.id }
   github_user_ids = {}
   github_app_ids  = {}
-
-  allow_bypass = ["team:platform"]
 }
 ```
 
-### v1.x - Environment Protection Simplification
+## Testing
 
-Recent simplification of environment protection:
-
-- Removed nested `protection_rules` object; use flat `required_approvers` directly inside each environment.
-- Removed `wait_timer_minutes` (grace period not supported in current implementation).
-- Renamed performance optimization variables: `allow_bypass_team_ids` → `github_team_ids`, `allow_bypass_app_ids` → `github_app_ids` for consistency.
-- `required_approvers` supports both team reviewers (`team:<slug>`) and user reviewers (`user:<login>`).
-- Environment reviewers must have at least `push` permission; the module auto-elevates reviewers to `push` if needed.
-
-Migration snippet:
-
-```hcl
-# Before
-environments = {
-  prod = {
-    protection_rules = {
-      required_approvers = ["team:sre"]
-      wait_timer_minutes = 0
-    }
-  }
-}
-
-# After
-environments = {
-  prod = {
-    required_approvers = ["team:sre"]
-  }
-}
+```bash
+terraform -chdir=modules/repository test
 ```
 
-[Your License Here]
+## Examples
+
+- [`examples/simple/`](./examples/simple/) — minimal configuration
+- [`examples/complete/`](./examples/complete/) — branch protection, permissions, environments
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -418,7 +152,6 @@ No modules.
 | [github_repository.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository) | resource |
 | [github_repository_collaborators.all](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_collaborators) | resource |
 | [github_repository_custom_property.property](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_custom_property) | resource |
-| [github_repository_custom_property.workspace](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_custom_property) | resource |
 | [github_repository_deploy_key.deploy_key](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_deploy_key) | resource |
 | [github_repository_environment.env](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_environment) | resource |
 | [github_repository_ruleset.ruleset](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_ruleset) | resource |
@@ -471,7 +204,6 @@ No modules.
 | <a name="input_vulnerability_alerts"></a> [vulnerability\_alerts](#input\_vulnerability\_alerts) | Set to true to enable security alerts for vulnerable dependencies. | `bool` | `true` | no |
 | <a name="input_web_commit_signoff_required"></a> [web\_commit\_signoff\_required](#input\_web\_commit\_signoff\_required) | Require contributors to sign off on web-based commits. | `bool` | `false` | no |
 | <a name="input_webhooks"></a> [webhooks](#input\_webhooks) | Map of webhooks to configure. Key is the webhook name. | <pre>map(object({<br/>    url    = string<br/>    events = list(string) # Generic events: 'push', 'pull_request', 'issue'<br/>    secret = optional(string, null)<br/>  }))</pre> | `{}` | no |
-| <a name="input_workspace"></a> [workspace](#input\_workspace) | Optional workspace/namespace for logical grouping of repositories. If provided, will be stored as a custom property. | `string` | `null` | no |
 
 ## Outputs
 

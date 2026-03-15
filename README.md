@@ -1,183 +1,137 @@
 # GitHub Repository Governance Module
 
 [![Release](https://img.shields.io/github/v/release/vmvarela/terraform-github-governance?logo=github)](https://github.com/vmvarela/terraform-github-governance/releases)
-[![Tests](https://img.shields.io/badge/tests-27%20passed-success?logo=pre-commit)](./tests/)
-[![Terraform Version](https://img.shields.io/badge/terraform-%3E%3D1.7-623CE4?logo=terraform)](https://www.terraform.io)
-[![OpenTofu Version](https://img.shields.io/badge/opentofu-%3E%3D1.7-FFDA18?logo=opentofu)](https://opentofu.org)
-[![GitHub Provider](https://img.shields.io/badge/provider-github%20%3E%3D%206.8.0-181717?logo=github)](https://registry.terraform.io/providers/integrations/github/latest)
+[![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.7-623CE4?logo=terraform)](https://www.terraform.io)
 
-A Terraform module for managing GitHub repositories at scale with configurable presets, standardized naming patterns, and secure branch protection defaults.
+Manage GitHub repositories at scale from a single `tfvars` file. Define named presets once, apply them across repositories, and override individual fields per repo. The module handles branch protection rulesets, permissions, environments, secrets, webhooks, and naming conventions.
 
-## Features
-
-- **Preset System**: Reusable configurations you define once and apply per repository
-- **Standardized Naming**: Apply organization-wide naming patterns with `repository_naming`
-- **Safe Renaming**: Rename repositories without Terraform resource recreation
-- **Branch Protection**: Flat, intuitive configuration with automatic code owner review enforcement
-- **Merge Strategies**: Configurable merge commit, squash, rebase, auto-merge, and branch cleanup settings
-- **Feature Toggles**: Control issues, wiki, projects, and discussions per repository or preset
-- **Security Settings**: Vulnerability alerts and web commit sign-off requirements
-- **Sensitive Secrets**: Repository secrets marked as sensitive with safe `for_each` iteration
-- **Performance Optimization**: Central ID resolution - governance module pre-fetches all team/user/app IDs once and passes them to repository instances, eliminating duplicate API calls
-- **Hierarchical Architecture**: Governance module orchestrates repository submodule for clean separation
-
-## Module Structure
-
-```
-.
-├── main.tf                          # Governance orchestration logic
-├── variables.tf                     # Input variables
-├── outputs.tf                       # Module outputs
-├── locals.tf                        # Preset resolution & repository processing
-├── terraform.tf                     # Terraform and provider requirements
-├── data.tf                          # Pre-fetch team/app IDs
-├── modules/
-│   └── repository/                  # Repository submodule
-│       ├── main.tf
-│       ├── variables.tf
-│       ├── outputs.tf
-│       ├── locals.tf
-│       ├── terraform.tf
-│       ├── examples/
-│       │   ├── simple/              # Basic repository usage
-│       │   └── complete/            # Advanced repository features
-│       └── tests/
-│           └── repository.tftest.hcl
-├── examples/
-│   ├── simple/                      # Basic governance usage
-│   └── complete/                    # Advanced governance features
-└── tests/
-    └── governance.tftest.hcl        # Governance module tests (22 tests)
-```
+For single-repository management, use the [`modules/repository`](./modules/repository/) submodule directly.
 
 ## Quick Start
-
-### Basic Usage
 
 ```hcl
 module "governance" {
   source = "path/to/module"
 
   organization      = "my-org"
-  workspace         = "platform"          # Optional: logical grouping
-  repository_naming = "%s"                # No prefix, use keys as-is
+  repository_naming = "myorg-%s"  # Creates: myorg-api-service, myorg-worker, etc.
 
-  # Define any non-default presets you want to use
   presets = {
-    # Example preset you can reference from repositories
-    production-service = {
+    service = {
       protected_branches = ["main"]
       required_approvals = 2
       required_checks    = ["ci", "security-scan"]
+      allow_bypass       = ["org-admin"]
     }
   }
 
   repositories = {
     api-service = {
-      description = "Main API service"
+      preset      = "service"
+      description = "Main API"
       topics      = ["api", "backend"]
     }
-
-    payment-processor = {
-      preset      = "production-service" # must exist in var.presets
-      description = "Payment processing service"
+    worker = {
+      preset      = "service"
+      description = "Background worker"
     }
   }
 }
 ```
 
-### With Name Prefix
+## Presets
 
-```hcl
-module "governance" {
-  source = "path/to/module"
-
-  organization      = "my-org"
-  repository_naming = "myorg-%s"  # Prefix: myorg-api-service, myorg-worker, etc.
-
-  repositories = {
-    api-service = {}      # Creates "myorg-api-service"
-    worker      = {}      # Creates "myorg-worker"
-  }
-}
-```
-
-## Defining Presets
-
-Presets are passed via `var.presets` (only `default` exists by default). Define any number of named presets and reference them from repositories with `preset = "<name>"`.
+Presets are named bundles of defaults. Every field is optional — unset fields fall back to the module's built-in defaults (private visibility, `main` branch, 1 approval required, force push blocked).
 
 ```hcl
 presets = {
-  default = {
-    # Optional: override base defaults (private/main, etc.)
-  }
+  default = {}  # always present; override base defaults here
 
-  production-service = {
-    protected_branches = ["main", "release/*"]
-    required_approvals = 2
-    required_checks    = ["ci", "security-scan"]
-    allow_bypass       = ["org-admin"]
+  production = {
+    protected_branches      = ["main", "release/*"]
+    required_approvals      = 2
+    required_checks         = ["ci", "security-scan"]
+    allow_bypass            = ["org-admin", "team:sre"]
+    delete_branch_on_merge  = true
   }
 
   library = {
     visibility         = "public"
     protected_branches = ["main"]
     required_checks    = ["test", "lint"]
+    has_wiki           = false
   }
 }
 ```
 
-## Advanced Features
-
-### Preset Overrides
-
-Override specific preset values while keeping the rest:
+A repository inherits its preset, then applies per-repo overrides on top:
 
 ```hcl
 repositories = {
   critical-api = {
-    preset                  = "production-service"  # Base: 2 approvals
-    description             = "Critical API"
-    protected_branches      = ["main", "release/*"]
-    required_approvals      = 3  # Override: increase to 3
-    required_checks         = ["ci", "security-scan", "integration-tests"]
-    prevent_force_push      = true
-    prevent_branch_deletion = true
-    allow_bypass            = ["org-admin"]
+    preset             = "production"
+    required_approvals = 3             # override: bump from 2 to 3
+    topics             = ["critical"]
   }
 }
 ```
 
-### Safe Repository Renaming
+## Repository Options
 
-Rename repositories without Terraform resource recreation:
+### Renaming without recreation
+
+The map key is Terraform's stable identifier. Add a `name` field to change the GitHub name without destroying the resource:
 
 ```hcl
 repositories = {
-  # Terraform key is stable (never changes)
-  legacy-auth = {
-    name        = "auth-service-v2"  # Actual GitHub name
-    preset      = "production-service"
-    description = "Authentication service (renamed)"
+  auth-service = {            # key never changes
+    name   = "auth-svc-v2"   # GitHub name can change freely
+    preset = "production"
   }
 }
 ```
 
-**Renaming Process**:
-1. Keep the Terraform map key stable (e.g., `legacy-auth`)
-2. Add or change the `name` field to the new GitHub repository name
-3. Run `terraform apply` - Terraform will rename the repository without destroying/recreating
+### Environments
 
-### Custom Properties
-
-Add custom metadata to repositories:
+Environments with optional required reviewers, secrets, and variables:
 
 ```hcl
+environments = {
+  production = {
+    required_approvers = ["team:sre", "user:alice"]
+    secrets            = { API_KEY = "prod-value" }
+    variables          = { ENV = "production" }
+  }
+  staging = {
+    variables = { ENV = "staging" }
+  }
+}
+```
+
+Reviewers must have at least `push` permission. The module auto-elevates any reviewer who doesn't — set a higher role explicitly in `permissions` if needed.
+
+### Permissions and bypass actors
+
+```hcl
+permissions = {
+  "team:engineers" = "push"
+  "team:external"  = "pull"
+  "user:alice"     = "admin"
+}
+
+allow_bypass = ["org-admin", "role:maintain", "team:sre", "app:renovate"]
+```
+
+Valid bypass formats: `org-admin` · `role:maintain|write|admin` · `team:<slug>` · `app:<slug>`
+
+### Custom properties and workspace
+
+```hcl
+workspace = "platform"   # stored as a custom property on every repo
+
 repositories = {
   api = {
-    description = "API service"
     properties = {
-      team        = "platform"
       cost_center = "engineering"
       tier        = "production"
     }
@@ -185,233 +139,19 @@ repositories = {
 }
 ```
 
-**Note**: If `workspace` is set, it is automatically added as a custom property on each repository.
-
-### Template Repositories
-
-Create template repositories and use them:
-
-```hcl
-repositories = {
-  # Define a template
-  service-template = {
-    preset      = "library"
-    is_template = true
-    description = "Template for new services"
-  }
-
-  # Create from template
-  new-service = {
-    preset      = "staging"
-    description = "New service from template"
-    template = {
-      repository           = "my-org/service-template"
-      include_all_branches = false
-    }
-  }
-}
-```
-
-### Environment Protection
-
-Configure environment-specific reviewers, secrets, and variables using a flat structure:
-
-```hcl
-repositories = {
-  api = {
-    preset = "production-service"
-
-    environments = {
-      production = {
-        required_approvers = ["team:sre", "team:security"]  # reviewers
-        secrets = {
-          API_KEY = "prod-secret-value"
-        }
-        variables = {
-          ENV = "production"
-        }
-      }
-      staging = {
-        secrets = {
-          API_KEY = "staging-secret-value"
-        }
-        variables = {
-          ENV = "staging"
-        }
-      }
-    }
-  }
-}
-```
-
-If `required_approvers` is omitted or an empty list, no reviewers are enforced for that environment.
-
-#### Environment Reviewers & Permissions
-
-- Minimum role: Reviewers (both `team:<slug>` and `user:<login>`) must have at least `push` permission on the repository for GitHub to accept them as environment reviewers.
-- Auto-elevation: This module automatically grants `push` to any reviewer declared in `required_approvers` who does not already meet the minimum. If you need a higher role, set it explicitly in `permissions` and it will be respected.
-- Ordering stability: Ruleset `bypass_actors` are normalized and sorted by their resolved IDs to avoid cosmetic reordering drift across plans.
-
-## Branch Protection Ruleset
-The branch-protection inputs are flat and intuitive on each repository:
-
-```hcl
-# Per-repository fields (all optional, secure defaults apply)
-protected_branches      = ["main", "release/*"]
-allow_bypass            = ["org-admin", "team:sre"]
-required_approvals      = 2
-required_checks         = ["ci", "security-scan"]
-prevent_force_push      = true
-prevent_branch_deletion = true
-```
-
-Ruleset behavior:
-- If `required_approvals > 0`, code owner review and thread resolution are enforced automatically.
-- Bypass actors can be `org-admin`, `role:<maintain|write|admin>`, `team:<slug>`, or `app:<slug>`.
-
-## Variables
-
-### Required
-
-| Name | Type | Description |
-|------|------|-------------|
-| `organization` | string | GitHub organization name |
-
-### Optional
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `workspace` | string | `null` | Optional workspace/namespace for logical grouping (stored as custom property) |
-| `repository_naming` | string | `"%s"` | sprintf-style format string for repository names |
-| `repositories` | map(object) | `{}` | Map of repositories to create |
-| `presets` | map(object) | `{ default = {} }` | Named presets you define and reference (includes merge, feature, and security settings) |
-
-### Repository Object
-
-```hcl
-{
-  preset             = optional(string, "default")
-  name               = optional(string)           # For renaming
-  description        = optional(string)
-  visibility         = optional(string)           # "public", "private", "internal"
-  default_branch     = optional(string)
-  topics             = optional(list(string))
-  properties         = optional(map(string))
-  is_template        = optional(bool)
-  template           = optional(object)
-  permissions        = optional(map(string))
-  deploy_keys        = optional(map(object))
-  allowed_roles      = optional(list(string))
-  webhooks           = optional(map(object))
-  repository_secrets = optional(map(string))    # Marked as sensitive
-  repository_variables = optional(map(string))
-  environments       = optional(map(object))
-
-  # Branch protection (flattened)
-  protected_branches      = optional(list(string))
-  allow_bypass            = optional(list(string))
-  required_approvals      = optional(number)
-  required_checks         = optional(list(string))
-  prevent_force_push      = optional(bool)
-  prevent_branch_deletion = optional(bool)
-  # Merge settings (can override preset)
-  allow_merge_commit          = optional(bool)
-  allow_squash_merge          = optional(bool)
-  allow_rebase_merge          = optional(bool)
-  allow_auto_merge            = optional(bool)
-  delete_branch_on_merge      = optional(bool)
-  allow_update_branch         = optional(bool)
-  squash_merge_commit_title   = optional(string)
-  squash_merge_commit_message = optional(string)
-  merge_commit_title          = optional(string)
-  merge_commit_message        = optional(string)
-
-  # Feature toggles (can override preset)
-  has_issues      = optional(bool)
-  has_wiki        = optional(bool)
-  has_projects    = optional(bool)
-  has_discussions  = optional(bool)
-
-  # Repository-only settings (not in presets)
-  archived     = optional(bool)
-  homepage_url = optional(string)
-
-  # Security (can override preset)
-  vulnerability_alerts        = optional(bool)
-  web_commit_signoff_required = optional(bool)}
-```
-
-## Outputs
-
-| Name | Description |
-|------|-------------|
-| `repositories` | Map of repositories with id, names, URLs, default_branch, `protected_branches_ruleset_id`, and `applied_preset` |
-| `repository_names` | Map of keys to GitHub names |
-| `repository_urls` | Map of keys to HTML URLs |
-| `workspace` | The workspace applied to all repositories |
-| `organization` | The GitHub organization name |
-
-Note: Each submodule instance also exposes `protected_branches_ruleset_created` (boolean) for plan-phase assertions.
-
 ## Testing
 
-Run tests with:
-
 ```bash
-terraform test
+terraform test           # all tests (governance + submodule)
+terraform test -filter=tests/governance.tftest.hcl
 ```
 
-**Test Coverage (27 tests: 22 governance + 5 submodule)**:
-- ✅ Preset application (default, production-service, library, staging, experimental, documentation)
-- ✅ Name format with and without prefix
-- ✅ Explicit name field for renaming
-- ✅ Preset overrides (approvals, visibility, checks)
-- ✅ Workspace injection into properties
-- ✅ Multiple repositories with different presets
-- ✅ Topics and properties merging
-- ✅ Merge strategy settings (squash, rebase, auto-merge, branch cleanup)
-- ✅ Feature toggle settings (issues, wiki, projects, discussions)
-- ✅ Security settings (vulnerability alerts, web commit sign-off)
-- ✅ Repository-only settings (archived, homepage_url)
-- ✅ Optional workspace (null default)
-- ✅ Empty repositories map
-- ✅ Minimal configuration
+27 tests cover: preset application and overrides, naming patterns, renaming, merge strategies, feature toggles, security settings, environments, workspace injection.
 
 ## Examples
 
-See the `examples/` directory:
-- **`examples/simple/`**: Basic governance with preset usage
-- **`examples/complete/`**: Advanced governance features (overrides, renaming, templates, environments)
-
-For repository submodule examples:
-- **`modules/repository/examples/simple/`**: Basic repository usage
-- **`modules/repository/examples/complete/`**: Advanced repository features
-
-## Requirements
-
-- Terraform >= 1.7
-- GitHub Provider >= 6.8.0
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-
-
----
-
-## Acknowledgments
-
-- Built with [Terraform](https://www.terraform.io/) and the [GitHub Provider](https://registry.terraform.io/providers/integrations/github/latest)
-- Uses [terraform-docs](https://terraform-docs.io/) for documentation generation
-- Testing with native [Terraform Test](https://developer.hashicorp.com/terraform/language/tests)
-
----
-
-**Made with ❤️ by [Victor Varela](https://github.com/vmvarela)**
-
-## Secrets
-
-**Do not commit secrets**: Never commit tokens or secret values in the repository or in `terraform.tfvars`. Use GitHub Actions secrets, environment variables, or a secret manager (OIDC). Example: set `GITHUB_TOKEN` in your CI environment and reference it via `var.github_token`.
+- [`examples/simple/`](./examples/simple/) — basic preset usage
+- [`examples/complete/`](./examples/complete/) — overrides, renaming, templates, environments
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

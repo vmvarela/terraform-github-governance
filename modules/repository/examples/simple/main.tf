@@ -53,7 +53,6 @@ module "repo" {
   visibility              = var.visibility
   default_branch          = var.default_branch
   organization            = var.organization
-  workspace               = var.workspace
   topics                  = var.topics
   properties              = var.properties
   is_template             = var.is_template

@@ -179,9 +179,3 @@ variable "webhooks" {
   }))
   default = {}
 }
-
-variable "workspace" {
-  description = "Optional workspace/namespace for logical grouping and governance (e.g., 'platform-services', 'data-team'). Stored as a custom property."
-  type        = string
-  default     = null
-}

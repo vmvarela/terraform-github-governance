@@ -45,7 +45,6 @@ module "production_api" {
 
   name           = "production-api"
   organization   = var.organization
-  workspace      = "platform"
   description    = "Production API service with strict controls"
   visibility     = "public"
   default_branch = "main"
@@ -53,6 +52,7 @@ module "production_api" {
   topics = ["api", "production", "backend"]
 
   properties = {
+    workspace   = "platform"
     environment = "production"
     cost-center = "engineering"
   }
@@ -143,11 +143,14 @@ module "open_source_library" {
 
   name         = "awesome-library"
   organization = var.organization
-  workspace    = "open-source"
   description  = "Open source library for the community"
   visibility   = "public"
 
   topics = ["library", "open-source", "golang"]
+
+  properties = {
+    workspace = "open-source"
+  }
 
   # Moderate protection for public library (flattened)
   protected_branches      = ["main"]
@@ -178,7 +181,6 @@ module "service_template" {
 
   name         = "service-template"
   organization = var.organization
-  workspace    = "templates"
   description  = "Template for creating new microservices"
   visibility   = "public"
   is_template  = true
@@ -186,6 +188,7 @@ module "service_template" {
   topics = ["template", "microservice", "boilerplate"]
 
   properties = {
+    workspace   = "templates"
     owner       = "platform"
     cost-center = "engineering"
     environment = "development"
@@ -208,9 +211,12 @@ module "new_service_from_template" {
 
   name         = "payment-service"
   organization = var.organization
-  workspace    = "platform"
   description  = "Payment processing service created from template"
   visibility   = "public"
+
+  properties = {
+    workspace = "platform"
+  }
 
   template = {
     repository           = "${var.organization}/service-template"

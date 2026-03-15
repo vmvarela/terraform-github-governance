@@ -60,7 +60,7 @@ locals {
       )
 
       # Core configuration (repo overrides preset)
-      description    = trimspace(join("", compact([try(repo.description, null), try(local.resolved_presets[key].description, null)])))
+      description    = try(coalesce(try(repo.description, null), try(local.resolved_presets[key].description, null)), "")
       visibility     = coalesce(try(repo.visibility, null), try(local.resolved_presets[key].visibility, null), local.preset_base_default.visibility)
       default_branch = coalesce(try(repo.default_branch, null), try(local.resolved_presets[key].default_branch, null), local.preset_base_default.default_branch)
       topics         = coalesce(try(repo.topics, null), try(local.resolved_presets[key].topics, null), local.preset_base_default.topics)

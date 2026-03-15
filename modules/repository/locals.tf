@@ -31,6 +31,7 @@ locals {
         actor == "org-admin" ? 1 :
         actor == "role:maintain" ? 2 :
         actor == "role:write" ? 4 :
+        actor == "role:admin" ? 5 :
         startswith(actor, "team:") ? var.github_team_ids[split(":", actor)[1]] :
         startswith(actor, "app:") ? var.github_app_ids[split(":", actor)[1]] :
         0
