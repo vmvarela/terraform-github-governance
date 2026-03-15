@@ -165,7 +165,7 @@ terraform test -filter=tests/governance.tftest.hcl
 
 | Name | Version |
 |------|---------|
-| <a name="provider_github"></a> [github](#provider\_github) | 6.11.0 |
+| <a name="provider_github"></a> [github](#provider\_github) | 6.11.1 |
 
 ## Modules
 
