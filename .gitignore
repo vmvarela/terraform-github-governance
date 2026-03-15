@@ -40,3 +40,7 @@ terraform.rc
 # Ignore IDE files
 .vscode/
 .idea/
+
+# Ignore IA helpers
+.agents/
+skills-lock.json

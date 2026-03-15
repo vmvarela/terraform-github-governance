@@ -1,33 +1,41 @@
-"Documentation":
+"type:docs":
   - changed-files:
-    - any-glob-to-any-file: 'docs/**'
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+          - "LICENSE*"
+          - "CHANGELOG*"
 
-"Modules":
+"type:chore":
   - changed-files:
-    - any-glob-to-any-file:
-      - 'modules/**'
-      - '**/*.tf'
+      - any-glob-to-any-file:
+          - ".github/**"
+          - ".pre-commit-config.yaml"
+          - ".gitignore"
+          - ".editorconfig"
+          - "renovate.json"
+          - "dependabot.yml"
 
-"Examples":
+"type:feature":
   - changed-files:
-    - any-glob-to-any-file:
-      - 'examples/**'
+      - any-glob-to-any-file:
+          - "*.tf"
+          - "modules/**/*.tf"
 
-"Tests":
+"type:bug":
   - changed-files:
-    - any-glob-to-any-file:
-      - 'tests/**'
-      - '**/*_test.tf'
+      - any-glob-to-any-file:
+          - "*.tf"
+          - "modules/**/*.tf"
 
-"CI":
+"type:spike":
   - changed-files:
-    - any-glob-to-any-file:
-      - '.github/**'
-      - '.github/workflows/**'
-      - '.github/dependabot.yml'
+      - any-glob-to-any-file:
+          - "examples/**"
 
-"Security":
+"type:tests":
   - changed-files:
-    - any-glob-to-any-file:
-      - 'SECURITY.md'
-      - '.github/dependabot.yml'
+      - any-glob-to-any-file:
+          - "tests/**"
+          - "modules/**/tests/**"
+          - "**/*.tftest.hcl"
