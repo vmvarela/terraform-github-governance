@@ -35,6 +35,7 @@ jobs:
     permissions:
       actions: read
       contents: read
+      packages: write
       security-events: write
       pull-requests: read
     steps:
@@ -67,10 +68,9 @@ jobs:
 
       - name: Setup Ghoten
         if: ${{ matrix.provider == 'ghoten' }}
-        uses: vmvarela/ghoten/actions/setup@master
+        uses: vmvarela/ghoten@v1
         with:
-          ghoten_version: ${{ matrix.version }}
-          alias: 'terraform'
+          command: validate
 
       - name: Symlink OpenTofu to terraform (for tests/hooks)
         if: ${{ matrix.provider == 'opentofu' }}
@@ -81,11 +81,13 @@ jobs:
           terraform --version
 
       - name: Setup TFLint
+        if: ${{ matrix.provider != 'ghoten' }}
         uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
 
       - name: Install terraform-docs (download binary pinned)
+        if: ${{ matrix.provider != 'ghoten' }}
         run: |
           set -euo pipefail
           version="${TERRAFORM_DOCS_VERSION}"
@@ -96,6 +98,7 @@ jobs:
           terraform-docs --version
 
       - name: Pre-commit
+        if: ${{ matrix.provider != 'ghoten' }}
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
