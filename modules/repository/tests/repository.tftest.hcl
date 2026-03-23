@@ -31,6 +31,25 @@ mock_provider "github" {
       id = "test-repo"
     }
   }
+
+  mock_resource "github_repository_deploy_key" {
+    defaults = {
+      id = "test-deploy-key-id"
+    }
+  }
+
+  mock_resource "github_repository_webhook" {
+    defaults = {
+      id  = "test-webhook-id"
+      url = "https://example.com/hook"
+    }
+  }
+
+  mock_resource "github_repository_collaborators" {
+    defaults = {
+      id = "test-collaborators-id"
+    }
+  }
 }
 
 run "basic_repository" {
@@ -219,5 +238,121 @@ run "repository_with_feature_toggles" {
   assert {
     condition     = github_repository.this.has_discussions == true
     error_message = "has_discussions should be true"
+  }
+}
+
+run "deploy_keys_coverage" {
+  command = plan
+  variables {
+    name                 = "repo-deploy-keys"
+    description          = "Deploy keys coverage test"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    permissions          = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    environments         = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = {}
+    github_app_ids       = {}
+    webhooks             = {}
+    deploy_keys = {
+      "ci-bot" = {
+        key       = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC ci-bot"
+        read_only = true
+      }
+      "deploy-key" = {
+        key       = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC deploy-key"
+        read_only = false
+      }
+    }
+  }
+  assert {
+    condition     = output.deploy_keys_count == 2
+    error_message = "Should create 2 deploy keys"
+  }
+  assert {
+    condition     = github_repository_deploy_key.deploy_key["ci-bot"].read_only == true
+    error_message = "ci-bot deploy key should be read_only"
+  }
+  assert {
+    condition     = github_repository_deploy_key.deploy_key["deploy-key"].read_only == false
+    error_message = "deploy-key should not be read_only"
+  }
+}
+
+run "webhooks_coverage" {
+  command = plan
+  variables {
+    name                 = "repo-webhooks"
+    description          = "Webhooks coverage test"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    permissions          = {}
+    deploy_keys          = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    environments         = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = {}
+    github_app_ids       = {}
+    webhooks = {
+      "ci-webhook" = {
+        url    = "https://ci.example.com/webhook"
+        events = ["push", "pull_request"]
+        secret = "mysecret"
+      }
+      "notify" = {
+        url    = "https://notify.example.com/hook"
+        events = ["issues"]
+      }
+    }
+  }
+  assert {
+    condition     = output.webhooks_count == 2
+    error_message = "Should create 2 webhooks"
+  }
+  assert {
+    condition     = contains(github_repository_webhook.webhook["ci-webhook"].events, "push")
+    error_message = "ci-webhook should listen to push events"
+  }
+  assert {
+    condition     = github_repository_webhook.webhook["notify"].configuration[0].url == "https://notify.example.com/hook"
+    error_message = "notify webhook URL mismatch"
+  }
+}
+
+run "permissions_coverage" {
+  command = plan
+  variables {
+    name                 = "repo-permissions"
+    description          = "Permissions coverage test"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    environments         = {}
+    protected_branches   = []
+    github_team_ids      = { platform = 12345 }
+    github_user_ids      = { alice = 67890 }
+    github_app_ids       = {}
+    permissions = {
+      "user:alice"    = "push"
+      "team:platform" = "admin"
+    }
+  }
+  assert {
+    condition     = length(github_repository_collaborators.all) == 1
+    error_message = "Should create the collaborators resource when permissions are set"
   }
 }
