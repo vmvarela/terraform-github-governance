@@ -356,3 +356,148 @@ run "permissions_coverage" {
     error_message = "Should create the collaborators resource when permissions are set"
   }
 }
+
+# Auto-elevation tests: verify that environment reviewers are elevated to push
+# when they lack the minimum required permission (push/maintain/admin).
+
+run "reviewer_no_explicit_permission_gets_push" {
+  command = plan
+  variables {
+    name                 = "repo-reviewer-no-perm"
+    description          = "Reviewer with no explicit permission gets elevated to push"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = { alice = 111 }
+    github_app_ids       = {}
+    permissions          = {}
+    environments = {
+      staging = {
+        required_approvers = ["user:alice"]
+      }
+    }
+  }
+  assert {
+    condition     = length(github_repository_collaborators.all) == 1
+    error_message = "Collaborators resource should be created for auto-elevated reviewer"
+  }
+  assert {
+    condition = tolist([
+      for u in github_repository_collaborators.all[0].user :
+      u.permission if u.username == "alice"
+    ])[0] == "push"
+    error_message = "Reviewer with no explicit permission should be elevated to push"
+  }
+}
+
+run "reviewer_already_has_push_not_changed" {
+  command = plan
+  variables {
+    name                 = "repo-reviewer-push"
+    description          = "Reviewer already with push permission is not changed"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = { alice = 111 }
+    github_app_ids       = {}
+    permissions = {
+      "user:alice" = "push"
+    }
+    environments = {
+      staging = {
+        required_approvers = ["user:alice"]
+      }
+    }
+  }
+  assert {
+    condition = tolist([
+      for u in github_repository_collaborators.all[0].user :
+      u.permission if u.username == "alice"
+    ])[0] == "push"
+    error_message = "Reviewer already with push should remain at push"
+  }
+}
+
+run "reviewer_with_admin_not_downgraded" {
+  command = plan
+  variables {
+    name                 = "repo-reviewer-admin"
+    description          = "Reviewer with admin permission is not downgraded"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = { alice = 111 }
+    github_app_ids       = {}
+    permissions = {
+      "user:alice" = "admin"
+    }
+    environments = {
+      staging = {
+        required_approvers = ["user:alice"]
+      }
+    }
+  }
+  assert {
+    condition = tolist([
+      for u in github_repository_collaborators.all[0].user :
+      u.permission if u.username == "alice"
+    ])[0] == "admin"
+    error_message = "Reviewer with admin should not be downgraded to push"
+  }
+}
+
+run "reviewer_with_pull_gets_elevated_to_push" {
+  command = plan
+  variables {
+    name                 = "repo-reviewer-pull"
+    description          = "Reviewer with pull permission is elevated to push"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = { alice = 111 }
+    github_app_ids       = {}
+    permissions = {
+      "user:alice" = "pull"
+    }
+    environments = {
+      staging = {
+        required_approvers = ["user:alice"]
+      }
+    }
+  }
+  assert {
+    condition = tolist([
+      for u in github_repository_collaborators.all[0].user :
+      u.permission if u.username == "alice"
+    ])[0] == "push"
+    error_message = "Reviewer with pull should be elevated to push"
+  }
+}
