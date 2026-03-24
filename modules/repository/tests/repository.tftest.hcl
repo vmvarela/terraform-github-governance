@@ -50,6 +50,30 @@ mock_provider "github" {
       id = "test-collaborators-id"
     }
   }
+
+  mock_resource "github_actions_secret" {
+    defaults = {
+      id = "test-secret-id"
+    }
+  }
+
+  mock_resource "github_actions_variable" {
+    defaults = {
+      id = "test-variable-id"
+    }
+  }
+
+  mock_resource "github_actions_environment_secret" {
+    defaults = {
+      id = "test-env-secret-id"
+    }
+  }
+
+  mock_resource "github_actions_environment_variable" {
+    defaults = {
+      id = "test-env-variable-id"
+    }
+  }
 }
 
 run "basic_repository" {
@@ -499,5 +523,107 @@ run "reviewer_with_pull_gets_elevated_to_push" {
       u.permission if u.username == "alice"
     ])[0] == "push"
     error_message = "Reviewer with pull should be elevated to push"
+  }
+}
+
+# Secrets and variables tests: verify repo-level and environment-level
+# secrets/variables are created correctly.
+
+run "repository_secrets_coverage" {
+  command = plan
+  variables {
+    name                 = "repo-secrets"
+    description          = "Repository secrets coverage test"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_variables = {}
+    environments         = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = {}
+    github_app_ids       = {}
+    permissions          = {}
+    repository_secrets = {
+      TOKEN   = "abc123"
+      API_KEY = "xyz789"
+    }
+  }
+  assert {
+    condition     = output.repository_secrets_count == 2
+    error_message = "Should create 2 repository secrets"
+  }
+}
+
+run "repository_variables_coverage" {
+  command = plan
+  variables {
+    name               = "repo-variables"
+    description        = "Repository variables coverage test"
+    visibility         = "private"
+    default_branch     = "main"
+    organization       = "test-org"
+    topics             = []
+    deploy_keys        = {}
+    webhooks           = {}
+    repository_secrets = {}
+    environments       = {}
+    protected_branches = []
+    github_team_ids    = {}
+    github_user_ids    = {}
+    github_app_ids     = {}
+    permissions        = {}
+    repository_variables = {
+      ENV   = "prod"
+      DEBUG = "false"
+    }
+  }
+  assert {
+    condition     = output.repository_variables_count == 2
+    error_message = "Should create 2 repository variables"
+  }
+}
+
+run "environment_secrets_and_variables_coverage" {
+  command = plan
+  variables {
+    name                 = "repo-env-secrets-vars"
+    description          = "Environment secrets and variables coverage test"
+    visibility           = "private"
+    default_branch       = "main"
+    organization         = "test-org"
+    topics               = []
+    deploy_keys          = {}
+    webhooks             = {}
+    repository_secrets   = {}
+    repository_variables = {}
+    protected_branches   = []
+    github_team_ids      = {}
+    github_user_ids      = {}
+    github_app_ids       = {}
+    permissions          = {}
+    environments = {
+      staging = {
+        secrets = {
+          STAGE_TOKEN = "s1"
+          STAGE_KEY   = "s2"
+        }
+        variables = {
+          STAGE_ENV   = "staging"
+          STAGE_DEBUG = "true"
+        }
+      }
+    }
+  }
+  assert {
+    condition     = length(github_actions_environment_secret.env_secret) == 2
+    error_message = "Should create 2 environment secrets"
+  }
+  assert {
+    condition     = length(github_actions_environment_variable.env_var) == 2
+    error_message = "Should create 2 environment variables"
   }
 }
